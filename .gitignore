@@ -1,0 +1,48 @@
+# Entorno virtual
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Datos (no subir datos crudos al repositorio)
+data/raw/
+data/processed/
+*.csv
+*.xlsx
+*.xls
+
+# Modelos entrenados (pueden ser grandes)
+models/*.pkl
+models/*.joblib
+
+# Figuras generadas automáticamente (opcional, comenta si quieres subirlas)
+# figures/
+
+# IDEs
+.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Variables de entorno
+.env
+*.env
