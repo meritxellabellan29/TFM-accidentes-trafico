@@ -17,11 +17,11 @@ build/
 *.ipynb_checkpoints
 
 # Datos (no subir datos crudos al repositorio)
-data/raw/
-data/processed/
-*.csv
-*.xlsx
-*.xls
+#data/raw/
+#data/processed/
+#*.csv
+#*.xlsx
+#*.xls
 
 # Modelos entrenados (pueden ser grandes)
 models/*.pkl
