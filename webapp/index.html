@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Triaje de accidentes — Madrid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b1120;
+    --panel: #121a2e;
+    --panel-2: #182238;
+    --border: #24304a;
+    --text: #e8ecf5;
+    --text-dim: #8b96ad;
+    --accent: #3b82f6;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --green: #22c55e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: radial-gradient(circle at 20% 0%, #16213a 0%, var(--bg) 55%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px 16px 64px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .pulse-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 0 0 0 rgba(239,68,68,0.7);
+    animation: pulse 1.8s infinite;
+    flex-shrink: 0;
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.55); }
+    70%  { box-shadow: 0 0 0 12px rgba(239,68,68,0); }
+    100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+  }
+  header h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
+  header p { margin: 2px 0 0; font-size: 13px; color: var(--text-dim); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 20px;
+  }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 24px;
+  }
+  .card h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin: 0 0 16px;
+    font-weight: 700;
+  }
+
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .field-row { display: flex; gap: 12px; }
+  .field-row .field { flex: 1; }
+
+  select, input[type="date"], input[type="range"] {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  select:focus, input:focus { border-color: var(--accent); }
+
+  .hora-display {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; color: var(--text-dim); margin-bottom: 6px;
+  }
+  .hora-display span { color: var(--text); font-weight: 700; font-size: 15px; }
+
+  .checks { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 4px; }
+  .check-item {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    padding: 9px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13.5px;
+    user-select: none;
+    transition: border-color .15s, background .15s;
+  }
+  .check-item.active { border-color: var(--accent); background: #1c2b4a; }
+  .check-item input { display: none; }
+
+  button.submit {
+    width: 100%;
+    margin-top: 18px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    border: none;
+    padding: 15px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: transform .1s, box-shadow .2s;
+    box-shadow: 0 6px 20px -6px rgba(59,130,246,0.6);
+  }
+  button.submit:hover { transform: translateY(-1px); }
+  button.submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* Panel de resultado */
+  .result-card { display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .gauge-wrap { position: relative; width: 190px; height: 190px; margin: 6px 0 4px; }
+  .gauge-wrap svg { transform: rotate(-90deg); }
+  .gauge-bg { fill: none; stroke: var(--border); stroke-width: 14; }
+  .gauge-fg { fill: none; stroke-width: 14; stroke-linecap: round; transition: stroke-dashoffset 0.8s cubic-bezier(.4,0,.2,1), stroke 0.4s; }
+  .gauge-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .gauge-pct { font-size: 38px; font-weight: 800; line-height: 1; }
+  .gauge-label { font-size: 11px; color: var(--text-dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .prioridad-badge {
+    margin-top: 14px;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+  .prioridad-alta { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); }
+  .prioridad-media { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.4); }
+  .prioridad-baja { background: rgba(34,197,94,0.15); color: #86efac; border: 1px solid rgba(34,197,94,0.4); }
+
+  .result-note { font-size: 12px; color: var(--text-dim); margin-top: 16px; line-height: 1.5; }
+  .placeholder { color: var(--text-dim); font-size: 13.5px; padding: 40px 10px; line-height: 1.6; }
+  .placeholder svg { opacity: 0.35; margin-bottom: 10px; }
+
+  details { margin-top: 16px; width: 100%; text-align: left; }
+  summary { cursor: pointer; font-size: 12px; color: var(--text-dim); }
+  .detail-grid { font-size: 12px; color: var(--text-dim); margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+  .detail-grid b { color: var(--text); }
+
+  .error-box { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5; padding: 12px 14px; border-radius: 10px; font-size: 13px; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="pulse-dot"></div>
+    <div>
+      <h1>Triaje de accidentes de tráfico — Madrid</h1>
+      <p>Apoyo a la priorización de recursos en el momento del aviso · SAMUR · Policía Municipal · Emergencias 112</p>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- Formulario -->
+    <div class="card">
+      <h2>Datos del aviso</h2>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Distrito</label>
+          <select id="distrito"></select>
+        </div>
+        <div class="field">
+          <label>Tipo de accidente</label>
+          <select id="tipo_accidente"></select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Tipo de vía</label>
+          <select id="tipo_via"></select>
+        </div>
+        <div class="field">
+          <label>Fecha</label>
+          <input type="date" id="fecha">
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="hora-display"><span id="hora-label">Hora del aviso</span><span id="hora-valor">12:00</span></div>
+        <input type="range" id="hora" min="0" max="23" value="12">
+      </div>
+
+      <h2 style="margin-top:22px;">Condiciones</h2>
+      <div class="field-row">
+        <div class="field">
+          <label>Meteorología</label>
+          <select id="meteorologia"></select>
+        </div>
+        <div class="field">
+          <label>Estado del firme</label>
+          <select id="estado_firme"></select>
+        </div>
+      </div>
+
+      <h2 style="margin-top:22px;">Vehículos implicados</h2>
+      <div class="checks">
+        <label class="check-item" id="chk-cruce"><input type="checkbox" id="es_cruce"><span>📍 Ocurre en un cruce</span></label>
+        <label class="check-item" id="chk-moto"><input type="checkbox" id="incluye_moto"><span>🏍️ Moto / ciclomotor</span></label>
+        <label class="check-item" id="chk-bici"><input type="checkbox" id="incluye_bici"><span>🚲 Bicicleta</span></label>
+      </div>
+
+      <button class="submit" id="btn-calcular">Calcular probabilidad de gravedad</button>
+      <div id="error-box"></div>
+    </div>
+
+    <!-- Resultado -->
+    <div class="card result-card" id="result-card">
+      <h2 style="align-self:flex-start;">Resultado</h2>
+      <div id="placeholder" class="placeholder">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+        <div>Rellena el formulario y pulsa<br><b>«Calcular probabilidad»</b><br>para ver el resultado del modelo.</div>
+      </div>
+      <div id="result-content" style="display:none; width:100%;">
+        <div class="gauge-wrap">
+          <svg width="190" height="190" viewBox="0 0 190 190">
+            <circle class="gauge-bg" cx="95" cy="95" r="80"></circle>
+            <circle class="gauge-fg" id="gauge-fg" cx="95" cy="95" r="80"
+                    stroke-dasharray="502.4" stroke-dashoffset="502.4"></circle>
+          </svg>
+          <div class="gauge-center">
+            <div class="gauge-pct" id="gauge-pct">0%</div>
+            <div class="gauge-label">prob. gravedad</div>
+          </div>
+        </div>
+        <div class="prioridad-badge" id="prioridad-badge">—</div>
+        <div class="result-note">Señal de apoyo adicional, no un sustituto del criterio profesional del personal de emergencias. Modelo entrenado con datos históricos 2012-2017 (Ayuntamiento de Madrid).</div>
+        <details>
+          <summary>Ver datos interpretados por el modelo</summary>
+          <div class="detail-grid" id="detail-grid"></div>
+        </details>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+// Fecha por defecto: hoy
+$('fecha').value = new Date().toISOString().slice(0, 10);
+
+$('hora').addEventListener('input', () => {
+  const h = $('hora').value.padStart ? $('hora').value : String($('hora').value);
+  $('hora-valor').textContent = String($('hora').value).padStart(2, '0') + ':00';
+});
+
+['chk-cruce', 'chk-moto', 'chk-bici'].forEach(id => {
+  const item = $(id);
+  const input = item.querySelector('input');
+  input.addEventListener('change', () => {
+    item.classList.toggle('active', input.checked);
+  });
+});
+
+function llenarSelect(id, opciones) {
+  $(id).innerHTML = opciones.map(o => `<option value="${o}">${o}</option>`).join('');
+}
+
+async function cargarOpciones() {
+  try {
+    const res = await fetch('/api/opciones');
+    const data = await res.json();
+    llenarSelect('distrito', data.distritos);
+    llenarSelect('tipo_accidente', data.tipos_accidente);
+    llenarSelect('tipo_via', data.tipos_via);
+    llenarSelect('meteorologia', data.meteorologia);
+    llenarSelect('estado_firme', data.estado_firme);
+  } catch (e) {
+    $('error-box').innerHTML = `<div class="error-box">No se han podido cargar las opciones del formulario. ¿Está corriendo <code>api.py</code>?</div>`;
+  }
+}
+cargarOpciones();
+
+const CIRC = 502.4; // 2 * PI * r(80)
+
+function pintarResultado(prob, interpretados) {
+  $('placeholder').style.display = 'none';
+  $('result-content').style.display = 'flex';
+  $('result-content').style.flexDirection = 'column';
+  $('result-content').style.alignItems = 'center';
+
+  const pct = Math.round(prob * 100);
+  $('gauge-pct').textContent = pct + '%';
+
+  let color, prioridadTxt, prioridadClass;
+  if (prob >= 0.5) { color = 'var(--red)'; prioridadTxt = '⬤ Prioridad alta'; prioridadClass = 'prioridad-alta'; }
+  else if (prob >= 0.25) { color = 'var(--amber)'; prioridadTxt = '⬤ Prioridad media'; prioridadClass = 'prioridad-media'; }
+  else { color = 'var(--green)'; prioridadTxt = '⬤ Prioridad estándar'; prioridadClass = 'prioridad-baja'; }
+
+  const gauge = $('gauge-fg');
+  gauge.style.stroke = color;
+  const offset = CIRC - (prob * CIRC);
+  requestAnimationFrame(() => { gauge.style.strokeDashoffset = offset; });
+  $('gauge-pct').style.color = color;
+
+  const badge = $('prioridad-badge');
+  badge.textContent = prioridadTxt;
+  badge.className = 'prioridad-badge ' + prioridadClass;
+
+  const labels = {
+    distrito: 'Distrito', hora: 'Hora', mes: 'Mes', dia_semana: 'Día',
+    es_finde: 'Fin de semana', tipo_accidente: 'Tipo accidente', tipo_via: 'Tipo de vía',
+    es_cruce: 'Cruce', meteorologia: 'Meteorología', estado_firme: 'Estado firme',
+    incluye_moto: 'Moto implicada', incluye_bici: 'Bici implicada'
+  };
+  $('detail-grid').innerHTML = Object.entries(interpretados)
+    .map(([k, v]) => `<span>${labels[k] || k}</span><b>${v}</b>`).join('');
+}
+
+$('btn-calcular').addEventListener('click', async () => {
+  const btn = $('btn-calcular');
+  btn.disabled = true;
+  btn.textContent = 'Calculando...';
+  $('error-box').innerHTML = '';
+
+  const fechaHora = `${$('fecha').value}T${String($('hora').value).padStart(2,'0')}:00:00`;
+
+  const payload = {
+    distrito: $('distrito').value,
+    fecha_hora: fechaHora,
+    tipo_accidente: $('tipo_accidente').value,
+    tipo_via: $('tipo_via').value,
+    es_cruce: $('es_cruce').checked,
+    meteorologia: $('meteorologia').value,
+    estado_firme: $('estado_firme').value,
+    incluye_moto: $('incluye_moto').checked,
+    incluye_bici: $('incluye_bici').checked,
+  };
+
+  try {
+    const res = await fetch('/api/predecir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Error desconocido');
+    pintarResultado(data.probabilidad_grave, data.inputs_interpretados);
+  } catch (e) {
+    $('error-box').innerHTML = `<div class="error-box">Error al calcular: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Calcular probabilidad de gravedad';
+  }
+});
+</script>
+</body>
+</html>
