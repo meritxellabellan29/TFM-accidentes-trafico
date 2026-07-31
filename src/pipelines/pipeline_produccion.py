@@ -19,13 +19,16 @@ NO es el mismo escenario que predecir un accidente individual en el
 momento del aviso (donde LESIVIDAD no se conoce todavía, por definición):
 para eso está `predecir_accidente_individual()` en este mismo módulo.
 """
+import sys
+import types
+
 import numpy as np
 import pandas as pd
 import joblib
 
-from utils import limpieza
-from utils import preprocesado as prep
-from utils import feature_engineering as fe
+from . import limpieza
+from . import preprocesado as prep
+from . import feature_engineering as fe
 
 
 class PipelineAccidentes:
@@ -273,3 +276,13 @@ class PipelineAccidentes:
     @staticmethod
     def load(path):
         return joblib.load(path)
+
+
+# Compatibilidad con artefactos .joblib guardados antes de mover este módulo
+# de notebooks/utils/ a src/pipelines/: el pickle de PipelineAccidentes fija
+# la ruta del módulo en el momento de pipe.save(), así que sin este alias los
+# .joblib ya entrenados (models/, webapp/models/) dejarían de poder cargarse
+# con PipelineAccidentes.load() hasta volver a ejecutar 03_Feature_Engineering.ipynb.
+if 'utils' not in sys.modules:
+    sys.modules['utils'] = types.ModuleType('utils')
+sys.modules['utils.pipeline_produccion'] = sys.modules[__name__]

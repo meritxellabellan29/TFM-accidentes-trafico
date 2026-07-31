@@ -16,6 +16,9 @@ build/
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
+# Caché de librerías usadas en los notebooks (osmnx/requests), no aporta al repo
+notebooks/cache/
+
 # Datos (no subir datos crudos al repositorio)
 #data/raw/
 #data/processed/

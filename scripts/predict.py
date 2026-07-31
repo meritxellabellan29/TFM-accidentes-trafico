@@ -7,51 +7,58 @@ aplica el pipeline completo (limpieza + preprocesado + feature engineering)
 ya ajustado en 04_Modelizacion.ipynb, y produce la probabilidad de gravedad
 predicha por accidente.
 
-Uso desde la carpeta notebooks/ (donde vive utils/):
+Uso (desde cualquier directorio, las rutas por defecto se resuelven
+respecto a la raíz del repo vía config/paths.yaml):
 
-    python predict.py --input ruta/al/excel_nuevo.xlsx --output predicciones.csv
+    python scripts/predict.py --input ruta/al/excel_nuevo.xlsx --output predicciones.csv
 
 Opciones:
-    --tipo {operativo,referencia}   Qué modelo usar (por defecto: operativo)
-    --pipeline RUTA                 Ruta al pipeline guardado (por defecto: ../models/pipeline_produccion.joblib)
-    --modelo RUTA                   Ruta al modelo guardado (por defecto: ../models/modelo_<tipo>.joblib)
+    --tipo {operativo,referencia}   Qué modelo usar (por defecto: el de config/model.yaml)
+    --pipeline RUTA                 Ruta al pipeline guardado (por defecto: models/pipeline_produccion.joblib)
+    --modelo RUTA                   Ruta al modelo guardado (por defecto: models/modelo_<tipo>.joblib)
 """
 import argparse
 import sys
+from pathlib import Path
 
 import pandas as pd
 import joblib
 
-from utils.pipeline_produccion import PipelineAccidentes
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+from src.config import cfg
+from src.pipelines.pipeline_produccion import PipelineAccidentes
 
 
 def main():
+    produccion = cfg.model['produccion']
+
     parser = argparse.ArgumentParser(
         description='Predice la probabilidad de gravedad de accidentes de tráfico nuevos.'
     )
     parser.add_argument('--input', required=True, help='Ruta al Excel nuevo (mismo formato que el original)')
     parser.add_argument('--output', default='predicciones.csv', help='Ruta del CSV de salida')
-    parser.add_argument('--tipo', choices=['operativo', 'referencia'], default='operativo',
+    parser.add_argument('--tipo', choices=['operativo', 'referencia'], default=produccion['tipo_defecto'],
                          help='Qué modelo usar: operativo (Pregunta 1) o referencia (Pregunta 2)')
-    parser.add_argument('--pipeline', default='../models/pipeline_produccion.joblib',
+    parser.add_argument('--pipeline', default=None,
                          help='Ruta al pipeline ya ajustado (PipelineAccidentes.save())')
     parser.add_argument('--modelo', default=None,
-                         help='Ruta al modelo; por defecto ../models/modelo_<tipo>.joblib')
+                         help='Ruta al modelo; por defecto models/modelo_<tipo>.joblib')
     args = parser.parse_args()
 
-    modelo_path = args.modelo or f'../models/modelo_{args.tipo}.joblib'
+    pipeline_path = args.pipeline or cfg.ruta(cfg.paths['models_dir']) / produccion['pipeline']
+    modelo_path = args.modelo or cfg.ruta(cfg.paths['models_dir']) / produccion[f'modelo_{args.tipo}']
 
-    print(f'Cargando pipeline desde {args.pipeline} ...')
+    print(f'Cargando pipeline desde {pipeline_path} ...')
     try:
-        pipe = PipelineAccidentes.load(args.pipeline)
+        pipe = PipelineAccidentes.load(str(pipeline_path))
     except FileNotFoundError:
-        print(f'ERROR: no se encuentra el pipeline en {args.pipeline}. '
+        print(f'ERROR: no se encuentra el pipeline en {pipeline_path}. '
               f'¿Se ha ejecutado pipe.save(...) en 04_Modelizacion.ipynb?')
         sys.exit(1)
 
     print(f'Cargando modelo desde {modelo_path} ...')
     try:
-        modelo = joblib.load(modelo_path)
+        modelo = joblib.load(str(modelo_path))
     except FileNotFoundError:
         print(f'ERROR: no se encuentra el modelo en {modelo_path}.')
         sys.exit(1)

@@ -12,26 +12,29 @@ Después, abrir http://localhost:5000 en el navegador.
 En despliegue (Render, Railway, etc.), el servidor de producción (gunicorn)
 importa "app" directamente de este archivo -- no hace falta tocar nada.
 
-Estructura esperada (todo dentro de esta misma carpeta "webapp/"):
-    api.py
-    index.html
-    utils/pipeline_produccion.py (+ el resto de utils/)
-    models/pipeline_produccion.joblib
-    models/modelo_operativo.joblib
+Estructura esperada (repo completo desplegado, no solo esta carpeta):
+    src/pipelines/pipeline_produccion.py (+ el resto de src/)
+    webapp/api.py
+    webapp/index.html
+    webapp/models/pipeline_produccion.joblib
+    webapp/models/modelo_operativo.joblib
 """
 import datetime
 import pathlib
+import sys
 
 import joblib
 from flask import Flask, jsonify, request, send_from_directory
-
-from utils.pipeline_produccion import PipelineAccidentes
 
 # Rutas SIEMPRE relativas a este archivo, no al directorio desde el que se
 # ejecute -- imprescindible para que funcione igual en local y en el
 # servidor de despliegue, sea cual sea su directorio de trabajo actual.
 BASE_DIR = pathlib.Path(__file__).resolve().parent
 MODELS_DIR = BASE_DIR / "models"
+
+# src/ vive en la raíz del repo, un nivel por encima de webapp/
+sys.path.append(str(BASE_DIR.parent))
+from src.pipelines.pipeline_produccion import PipelineAccidentes
 
 app = Flask(__name__, static_folder=str(BASE_DIR), static_url_path="")
 

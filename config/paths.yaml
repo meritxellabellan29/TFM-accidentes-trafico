@@ -1,0 +1,7 @@
+data:
+  raw_excel: data/raw/accidentes-trafico.xlsx
+  raw_distritos: data/raw/distritos_madrid.gpkg
+  processed_dir: data/processed
+  features_dir: data/processed/features
+models_dir: models
+figures_dir: figures

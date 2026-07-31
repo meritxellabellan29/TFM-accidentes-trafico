@@ -7,19 +7,23 @@ esperar a que lleguen los servicios de emergencia) y la app devuelve la
 probabilidad de que el accidente resulte grave, calculada por el modelo
 operativo entrenado en 04_Modelizacion.ipynb (Pregunta 1 del TFM).
 
-Cómo ejecutarla (desde la carpeta notebooks/, donde vive utils/):
-    streamlit run app.py
+Cómo ejecutarla (desde la raíz del repo):
+    streamlit run scripts/streamlit_app.py
 
 Requiere tener ya generados:
-    ../models/pipeline_produccion.joblib   (guardado en 03_Feature_Engineering.ipynb)
-    ../models/modelo_operativo.joblib      (guardado en 04_Modelizacion.ipynb)
+    models/pipeline_produccion.joblib   (guardado en 03_Feature_Engineering.ipynb)
+    models/modelo_operativo.joblib      (guardado en 04_Modelizacion.ipynb)
 """
 import datetime
+import sys
+from pathlib import Path
 
 import joblib
 import streamlit as st
 
-from utils.pipeline_produccion import PipelineAccidentes
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+from src.config import cfg
+from src.pipelines.pipeline_produccion import PipelineAccidentes
 
 st.set_page_config(page_title="Triaje de accidentes — Madrid", page_icon="🚨", layout="centered")
 
@@ -29,8 +33,10 @@ def cargar_artefactos():
     """Carga el pipeline y el modelo una sola vez (no en cada interacción del
     formulario) -- son los mismos artefactos ya guardados por los notebooks,
     nunca se reajustan aquí."""
-    pipe = PipelineAccidentes.load("../models/pipeline_produccion.joblib")
-    modelo = joblib.load("../models/modelo_operativo.joblib")
+    produccion = cfg.model['produccion']
+    models_dir = cfg.ruta(cfg.paths['models_dir'])
+    pipe = PipelineAccidentes.load(str(models_dir / produccion['pipeline']))
+    modelo = joblib.load(str(models_dir / produccion['modelo_operativo']))
     return pipe, modelo
 
 

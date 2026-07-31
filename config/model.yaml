@@ -1,0 +1,11 @@
+cv_splits: 5
+umbral_decision: 0.5
+
+shap:
+  n_muestra: 2000
+
+produccion:
+  pipeline: pipeline_produccion.joblib
+  modelo_operativo: modelo_operativo.joblib
+  modelo_referencia: modelo_referencia.joblib
+  tipo_defecto: operativo
