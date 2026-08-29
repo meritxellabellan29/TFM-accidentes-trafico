@@ -44,6 +44,49 @@ modelo = joblib.load(str(MODELS_DIR / "modelo_operativo.joblib"))
 print("Listo.")
 
 
+def sugerir_recursos(probabilidad, inputs):
+    """Sugerencia ORIENTATIVA de qué recursos reforzar, a partir de reglas de
+    dominio sobre la probabilidad y el tipo de accidente -- NO es una salida
+    del modelo: el dataset de entrenamiento no registra qué recursos se
+    enviaron a cada accidente histórico, así que no hay con qué entrenar esa
+    predicción. El 112 no aparece aquí como "recurso" porque es el canal de
+    coordinación a través del cual se despachan los demás, no una alternativa
+    a ellos -- se asume que ya se ha llamado.
+
+    Policía Municipal se sugiere siempre (regulación de tráfico y atestado),
+    con independencia de la gravedad. SAMUR se refuerza si la probabilidad de
+    gravedad es alta o si hay un usuario vulnerable de la vía implicado
+    (peatón, moto o bicicleta) -- ver Sección 6 de la memoria, donde estas
+    son las variables con mayor peso en el modelo explicativo. Bomberos se
+    apunta como posible necesidad de excarcelación solo en vuelco o colisión
+    múltiple con probabilidad alta."""
+    recursos = [{
+        "recurso": "Policía Municipal",
+        "motivo": "Regulación del tráfico y atestado del accidente",
+    }]
+
+    usuario_vulnerable = (
+        inputs.get("tipo_accidente") == "ATROPELLO"
+        or inputs.get("incluye_moto")
+        or inputs.get("incluye_bici")
+    )
+    if probabilidad >= 0.5 or usuario_vulnerable:
+        motivo = (
+            "Probabilidad de gravedad alta"
+            if probabilidad >= 0.5
+            else "Usuario vulnerable de la vía implicado (peatón, moto o bicicleta)"
+        )
+        recursos.append({"recurso": "SAMUR — asistencia sanitaria reforzada", "motivo": motivo})
+
+    if inputs.get("tipo_accidente") in ("VUELCO", "COLISIÓN MÚLTIPLE") and probabilidad >= 0.5:
+        recursos.append({
+            "recurso": "Bomberos — posible excarcelación",
+            "motivo": f'{inputs["tipo_accidente"].capitalize()} con probabilidad de gravedad alta',
+        })
+
+    return recursos
+
+
 @app.route("/")
 def index():
     return send_from_directory(str(BASE_DIR), "index.html")
@@ -80,6 +123,9 @@ def predecir():
             estado_firme=datos.get("estado_firme", "Seca Y Limpia"),
             incluye_moto=datos.get("incluye_moto", False),
             incluye_bici=datos.get("incluye_bici", False),
+        )
+        resultado["recursos_sugeridos"] = sugerir_recursos(
+            resultado["probabilidad_grave"], resultado["inputs_interpretados"]
         )
         return jsonify({"ok": True, **resultado})
     except Exception as e:

@@ -159,6 +159,17 @@
   .prioridad-media { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.4); }
   .prioridad-baja { background: rgba(34,197,94,0.15); color: #86efac; border: 1px solid rgba(34,197,94,0.4); }
 
+  .recursos-list { width: 100%; margin-top: 16px; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+  .recurso-item {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 8px 12px;
+  }
+  .recurso-item b { display: block; font-size: 13px; color: var(--text); }
+  .recurso-item span { font-size: 11.5px; color: var(--text-dim); }
+
   .result-note { font-size: 12px; color: var(--text-dim); margin-top: 16px; line-height: 1.5; }
   .placeholder { color: var(--text-dim); font-size: 13.5px; padding: 40px 10px; line-height: 1.6; }
   .placeholder svg { opacity: 0.35; margin-bottom: 10px; }
@@ -178,7 +189,7 @@
     <div class="pulse-dot"></div>
     <div>
       <h1>Triaje de accidentes de tráfico — Madrid</h1>
-      <p>Apoyo a la priorización de recursos en el momento del aviso · SAMUR · Policía Municipal · Emergencias 112</p>
+      <p>Apoyo a la priorización de recursos en el momento del aviso al 112 · SAMUR · Policía Municipal · Bomberos</p>
     </div>
   </header>
 
@@ -258,7 +269,8 @@
           </div>
         </div>
         <div class="prioridad-badge" id="prioridad-badge">—</div>
-        <div class="result-note">Señal de apoyo adicional, no un sustituto del criterio profesional del personal de emergencias. Modelo entrenado con datos históricos 2012-2017 (Ayuntamiento de Madrid).</div>
+        <div class="recursos-list" id="recursos-list"></div>
+        <div class="result-note">Señal de apoyo adicional, no un sustituto del criterio profesional del personal de emergencias. Modelo entrenado con datos históricos 2012-2017 (Ayuntamiento de Madrid). La sugerencia de recursos es orientativa, por reglas, y asume que ya se ha llamado al 112.</div>
         <details>
           <summary>Ver datos interpretados por el modelo</summary>
           <div class="detail-grid" id="detail-grid"></div>
@@ -309,7 +321,7 @@ cargarOpciones();
 
 const CIRC = 502.4; // 2 * PI * r(80)
 
-function pintarResultado(prob, interpretados) {
+function pintarResultado(prob, interpretados, recursos) {
   $('placeholder').style.display = 'none';
   $('result-content').style.display = 'flex';
   $('result-content').style.flexDirection = 'column';
@@ -341,6 +353,9 @@ function pintarResultado(prob, interpretados) {
   };
   $('detail-grid').innerHTML = Object.entries(interpretados)
     .map(([k, v]) => `<span>${labels[k] || k}</span><b>${v}</b>`).join('');
+
+  $('recursos-list').innerHTML = (recursos || [])
+    .map(r => `<div class="recurso-item"><b>${r.recurso}</b><span>${r.motivo}</span></div>`).join('');
 }
 
 $('btn-calcular').addEventListener('click', async () => {
@@ -371,7 +386,7 @@ $('btn-calcular').addEventListener('click', async () => {
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'Error desconocido');
-    pintarResultado(data.probabilidad_grave, data.inputs_interpretados);
+    pintarResultado(data.probabilidad_grave, data.inputs_interpretados, data.recursos_sugeridos);
   } catch (e) {
     $('error-box').innerHTML = `<div class="error-box">Error al calcular: ${e.message}</div>`;
   } finally {
