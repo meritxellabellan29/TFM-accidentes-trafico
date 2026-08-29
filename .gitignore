@@ -19,6 +19,10 @@ build/
 # Caché de librerías usadas en los notebooks (osmnx/requests), no aporta al repo
 notebooks/cache/
 
+# Caché local de runs de Weights & Biases
+wandb/
+notebooks/wandb/
+
 # Datos (no subir datos crudos al repositorio)
 #data/raw/
 #data/processed/
