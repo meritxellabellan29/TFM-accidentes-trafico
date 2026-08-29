@@ -8,15 +8,71 @@ Cada paso de limpieza vive en su propia función de responsabilidad única;
   - reutilizar un paso concreto de forma aislada si hiciera falta,
   - leer de un vistazo qué hace cada cosa, sin un único bloque largo.
 """
+import re
+
 import pandas as pd
 
 VALORES_NULOS = {'NO ASIGNADO', 'NO ASIGNADA', 'DESCONOCIDO', 'DESCONOCIDA'}
+
+# Patrón heurístico para detectar valores de texto que probablemente
+# representen "sin dato" con una convención distinta a VALORES_NULOS (p. ej.
+# un Excel nuevo que use "N/D" o "SIN DATOS" en vez de "NO ASIGNADO"). No
+# pretende ser exhaustivo -- es un diagnóstico para que un humano revise si
+# hay que ampliar VALORES_NULOS, no una sustitución automática.
+_PATRON_SIN_DATO_SOSPECHOSO = re.compile(
+    r'\b(DESCONOC\w*|NO\s*ASIGN\w*|SIN\s*DATOS?|N/?D|N/?A|NULL|NONE)\b',
+    re.IGNORECASE,
+)
+
+
+def validar_esquema(df, columnas_requeridas):
+    """Comprueba que `df` tiene al menos las columnas de `columnas_requeridas`,
+    y falla con un mensaje explícito si falta alguna -- en vez de un
+    `KeyError` críptico varias funciones más abajo. Pensada para llamarse al
+    principio de cualquier punto de entrada que reciba un Excel nuevo
+    (notebooks, `PipelineAccidentes`, `scripts/predict.py`, la webapp), para
+    que un Excel con columnas renombradas o ausentes falle rápido y de forma
+    legible."""
+    columnas_faltantes = set(columnas_requeridas) - set(df.columns)
+    if columnas_faltantes:
+        raise ValueError(
+            'El Excel cargado no tiene el formato esperado, faltan columnas: '
+            f'{sorted(columnas_faltantes)}'
+        )
+
+
+def diagnosticar_valores_sin_dato_no_reconocidos(df, valores_conocidos=VALORES_NULOS):
+    """Busca en las columnas de texto valores que parezcan representar "sin
+    dato" (contienen palabras como DESCONOCIDO, NO ASIGNADO, N/D, NULL...)
+    pero que NO estén en `valores_conocidos` -- es decir, que
+    `normalizar_nulos()` dejaría pasar tal cual como una categoría más, en
+    vez de convertirlos en NaN.
+
+    Pensada para ejecutarse sobre un Excel nuevo antes de confiar en
+    `normalizar_nulos()`: si aparece algo aquí, probablemente sea una
+    convención de "sin dato" distinta a la ya conocida, y haya que añadirla
+    a `VALORES_NULOS` antes de continuar.
+
+    Devuelve un dict {columna: [valores sospechosos]}, vacío si no hay nada
+    que revisar."""
+    valores_conocidos_upper = {str(v).upper() for v in valores_conocidos}
+    sospechosos = {}
+    for col in df.select_dtypes(include=['object', 'string']).columns:
+        encontrados = sorted({
+            v for v in df[col].dropna().unique()
+            if isinstance(v, str)
+            and v.upper() not in valores_conocidos_upper
+            and _PATRON_SIN_DATO_SOSPECHOSO.search(v)
+        })
+        if encontrados:
+            sospechosos[col] = encontrados
+    return sospechosos
 
 
 def limpiar_texto(df):
     """Aplica strip() a todas las columnas de texto."""
     df = df.copy()
-    for col in df.select_dtypes(include='object').columns:
+    for col in df.select_dtypes(include=['object', 'string']).columns:
         df[col] = df[col].str.strip()
     return df
 
@@ -88,7 +144,7 @@ def eliminar_duplicados(df, verbose=True):
 def normalizar_nulos(df, verbose=True):
     """Sustituye los valores de texto que representan 'sin dato' por NaN reales."""
     df = df.copy()
-    for col in df.select_dtypes(include='object').columns:
+    for col in df.select_dtypes(include=['object', 'string']).columns:
         df[col] = df[col].replace(VALORES_NULOS, pd.NA)
     if verbose:
         n_nulos = df.isna().sum().sum()

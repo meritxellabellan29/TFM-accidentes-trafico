@@ -8,6 +8,39 @@ visualización.
 from sklearn.metrics import roc_auc_score
 
 
+def graficar_parallel_coordinates(tabla, columnas_hiperparametros, columnas_metricas,
+                                   color=None, titulo=None, filename=None):
+    """Parallel coordinates de un grid de hiperparámetros ya evaluado (tabla
+    devuelta por `explorar_hiperparametros`/`analisis_estabilidad_bagging`),
+    para tener localmente, dentro del propio repositorio, el mismo tipo de
+    panel que se sube a Weights & Biases (`registrar_resultados_wandb`) al
+    tunear el modelo operativo -- útil para incluir en la memoria sin
+    depender de tener acceso a la cuenta de W&B.
+
+    `tabla` es el resultado de un grid ya evaluado (config + métricas en
+    columnas); `columnas_hiperparametros` son las columnas a mostrar como
+    ejes de config (izquierda), `columnas_metricas` las de resultado
+    (derecha); `color` es la columna usada para el degradado de las líneas
+    (por defecto, la primera de `columnas_metricas`); si `filename` termina
+    en `.html` guarda una versión interactiva, si termina en `.png`
+    (requiere el paquete `kaleido`) guarda una imagen estática."""
+    import plotly.express as px
+
+    color = color or columnas_metricas[0]
+    fig = px.parallel_coordinates(
+        tabla, dimensions=columnas_hiperparametros + columnas_metricas,
+        color=color, color_continuous_scale=px.colors.sequential.Plasma,
+        title=titulo,
+    )
+    if filename:
+        if filename.endswith('.html'):
+            fig.write_html(filename)
+        else:
+            fig.write_image(filename, scale=2)
+    fig.show()
+    return fig
+
+
 def graficar_validacion_temporal(tabla, filename=None):
     """Grafica la evolución del AUC-ROC de validación año a año en el
     walk-forward, junto con la tasa de gravedad de cada año — para ver de
@@ -53,10 +86,13 @@ def graficar_validacion_temporal(tabla, filename=None):
 
 
 def graficar_matrices_confusion(modelos, X_test, y_test, umbral=0.5, filename=None):
-    """Igual que `graficar_matriz_confusion`, pero para varios modelos a la
-    vez, en una rejilla de subplots -- para comparar de un vistazo cómo
-    reparte cada modelo sus aciertos/errores entre las dos clases, en vez
-    de generar un gráfico separado por modelo."""
+    """Matriz de confusión (recuentos absolutos y % por fila, normalizado
+    sobre la clase real) de varios modelos a la vez, en una rejilla de
+    subplots -- para comparar de un vistazo cómo reparte cada modelo sus
+    aciertos/errores entre las dos clases, en vez de generar un gráfico
+    separado por modelo. Con un desbalanceo del ~9.6% de la clase positiva,
+    normalizar sobre el total haría casi invisible el bloque de "grave",
+    por eso se normaliza por fila."""
     import math
     import matplotlib.pyplot as plt
     from sklearn.metrics import confusion_matrix
@@ -95,50 +131,6 @@ def graficar_matrices_confusion(modelos, X_test, y_test, umbral=0.5, filename=No
         plt.savefig(filename, dpi=150, bbox_inches='tight')
     plt.show()
     return fig
-
-
-def graficar_matriz_confusion(modelo, X_test, y_test, umbral=0.5, filename=None):
-    """Matriz de confusión con recuentos absolutos y porcentaje por fila
-    (normalizado sobre la clase real, no sobre el total) -- con un
-    desbalanceo del ~9.6% de la clase positiva, normalizar sobre el total
-    haría casi invisible el bloque de "grave", por eso se normaliza por fila:
-    de cada clase real, qué % se predijo correctamente y qué % no.
-
-    Nota sobre el umbral: 0.5 no es sagrado -- es el punto de corte que
-    convierte una probabilidad en una decisión binaria, y cambiarlo mueve
-    precision y recall en direcciones opuestas (más umbral -> más precision,
-    menos recall; y viceversa). Se deja como parámetro explícito para que
-    se pueda ajustar según el caso de uso real (p. ej. en un triaje, puede
-    interesar más un umbral bajo que maximice recall, aunque baje precision,
-    para no dejar pasar accidentes graves)."""
-    import matplotlib.pyplot as plt
-    from sklearn.metrics import confusion_matrix
-
-    y_pred = (modelo.predict_proba(X_test)[:, 1] >= umbral).astype(int)
-    cm = confusion_matrix(y_test, y_pred)
-    cm_pct = cm / cm.sum(axis=1, keepdims=True) * 100
-
-    fig, ax = plt.subplots(figsize=(5.5, 5))
-    im = ax.imshow(cm_pct, cmap='Blues', vmin=0, vmax=100)
-
-    etiquetas = ['No grave', 'Grave']
-    ax.set_xticks([0, 1]); ax.set_xticklabels(etiquetas)
-    ax.set_yticks([0, 1]); ax.set_yticklabels(etiquetas)
-    ax.set_xlabel('Predicción')
-    ax.set_ylabel('Real')
-    ax.set_title(f'Matriz de confusión (umbral={umbral})')
-
-    for i in range(2):
-        for j in range(2):
-            color = 'white' if cm_pct[i, j] > 50 else 'black'
-            ax.text(j, i, f'{cm[i, j]:,}\n({cm_pct[i, j]:.1f}%)',
-                     ha='center', va='center', color=color, fontsize=12)
-
-    plt.tight_layout()
-    if filename:
-        plt.savefig(filename, dpi=150, bbox_inches='tight')
-    plt.show()
-    return cm
 
 
 def graficar_curvas_roc(modelos, X_test, y_test, titulo='Curvas ROC — comparación de modelos', filename=None):
@@ -210,35 +202,6 @@ def graficar_curvas_roc_train_test(modelos, X_train, y_train, X_test, y_test, fi
         ax.axis('off')
 
     fig.suptitle('Curvas ROC train vs. test — todos los modelos', fontsize=14)
-    plt.tight_layout()
-    if filename:
-        plt.savefig(filename, dpi=150, bbox_inches='tight')
-    plt.show()
-    return fig
-
-
-def graficar_curva_roc_train_vs_test(modelo, X_train, y_train, X_test, y_test,
-                                      nombre_modelo='Modelo', filename=None):
-    """Curva ROC del MISMO modelo en train y test, superpuestas — forma
-    visual directa de ver overfitting: si la curva de train está muy por
-    encima de la de test (mucho más AUC), el modelo memoriza el train en
-    vez de generalizar (ver discusión de gap train-test)."""
-    import matplotlib.pyplot as plt
-    from sklearn.metrics import roc_curve
-
-    fig, ax = plt.subplots(figsize=(7, 6))
-    for nombre_split, X, y, estilo in [('Train', X_train, y_train, '-'), ('Test', X_test, y_test, '-')]:
-        y_proba = modelo.predict_proba(X)[:, 1]
-        fpr, tpr, _ = roc_curve(y, y_proba)
-        auc = roc_auc_score(y, y_proba)
-        ax.plot(fpr, tpr, estilo, label=f'{nombre_split} (AUC={auc:.3f})', linewidth=2)
-
-    ax.plot([0, 1], [0, 1], linestyle='--', color='grey', label='Aleatorio (AUC=0.5)')
-    ax.set_xlabel('Tasa de falsos positivos (1 - especificidad)')
-    ax.set_ylabel('Tasa de verdaderos positivos (recall)')
-    ax.set_title(f'Curva ROC train vs. test — {nombre_modelo}')
-    ax.legend(loc='lower right')
-    ax.grid(alpha=0.3)
     plt.tight_layout()
     if filename:
         plt.savefig(filename, dpi=150, bbox_inches='tight')

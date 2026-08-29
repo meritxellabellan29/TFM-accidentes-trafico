@@ -32,6 +32,16 @@ COLS_ACCIDENTE = [
 
 COLS_CATEGORICAS_MODELO = ['DISTRITO', 'TIPO ACCIDENTE', 'TIPO_VIA', 'DIA SEMANA']
 
+# Columnas mínimas que debe tener el Excel crudo para que el resto del
+# pipeline funcione. AÑO y MES se excluyen porque aún no existen en el
+# Excel crudo -- se derivan de FECHA en limpieza.limpiar_database(). Única
+# fuente de verdad: la usan tanto el notebook (02_Preprocesado.ipynb) como
+# PipelineAccidentes (fit()/transform(), CLI, webapp), vía
+# `limpieza.validar_esquema()`.
+COLUMNAS_RAW_REQUERIDAS = (set(COLS_ACCIDENTE) - {'AÑO', 'MES'}) | {
+    'LESIVIDAD', 'TIPO PERSONA', 'Tipo Vehiculo', 'Tramo Edad', 'SEXO',
+}
+
 
 def filtrar_lesividad_conocida(df, orden_lesividad=ORDEN_LESIVIDAD):
     """Filtra a personas con LESIVIDAD conocida y construye el target GRAVE

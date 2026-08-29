@@ -43,9 +43,27 @@ class PipelineAccidentes:
 
     def _limpiar_y_preprocesar(self, df_raw):
         """Pasos de limpieza + preprocesado hasta nivel accidente, comunes
-        a fit() y transform() (no dependen de nada aprendido en train)."""
+        a fit() y transform() (no dependen de nada aprendido en train).
+
+        Valida el esquema y diagnostica posibles convenciones de "sin dato"
+        no reconocidas ANTES de procesar nada -- así un Excel nuevo (mismo
+        formato, pero de otra publicación anual) que tenga una columna
+        renombrada/ausente, o una convención de nulos distinta, falla con
+        un aviso legible en vez de colarse en silencio o romper con un
+        KeyError críptico varias funciones más abajo."""
+        limpieza.validar_esquema(df_raw, prep.COLUMNAS_RAW_REQUERIDAS)
+
         df = limpieza.limpiar_database(df_raw.copy(), verbose=False)
         df = limpieza.eliminar_duplicados(df, verbose=False)
+
+        sospechosos = limpieza.diagnosticar_valores_sin_dato_no_reconocidos(df)
+        if sospechosos:
+            print("⚠️  Aviso: valores que podrían representar 'sin dato' pero no están "
+                  "reconocidos por normalizar_nulos() -- revisar si hay que ampliar "
+                  "VALORES_NULOS en src/pipelines/limpieza.py:")
+            for col, valores in sospechosos.items():
+                print(f'    {col}: {valores}')
+
         df = limpieza.normalizar_nulos(df, verbose=False)
 
         df_pers, stats = prep.filtrar_lesividad_conocida(df)
@@ -172,46 +190,34 @@ class PipelineAccidentes:
         `LESIVIDAD` ni de ningún dato de las personas implicadas (ese es
         precisamente el punto: es el caso de uso real de la Pregunta 1).
 
-        Parámetros
-        ----------
-        distrito : str
-            Uno de los 21 distritos de Madrid (mismo texto que en el
-            dataset original, p. ej. 'CENTRO', 'SALAMANCA'...).
-        fecha_hora : datetime-like (str admitido, p. ej. '2024-03-15 14:30')
-            Fecha y hora del aviso. Se usan para derivar HORA, MES y si es
-            fin de semana.
-        tipo_accidente : str
-            Tipo de accidente tal como lo describiría el aviso (p. ej.
-            'ATROPELLO', 'COLISIÓN DOBLE', 'CAÍDA MOTOCICLETA'...). Si no
-            se reconoce (no vista en train), se trata como la categoría de
-            referencia con un aviso por consola.
-        tipo_via : str, opcional
-            Categoría de vía ('CALLE', 'AVENIDA', 'AUTOVIA'...). Si no se
-            indica, se puede derivar de `lugar_texto` con el clasificador
-            de texto libre ya usado en el resto del proyecto.
-        lugar_texto : str, opcional
-            Descripción libre del lugar (p. ej. 'CALLE DE ALCALA - GRAN
-            VIA'), como alternativa a pasar `tipo_via`/`es_cruce` ya
-            calculados. Si se da, tiene prioridad sobre `tipo_via`.
-        es_cruce : bool, opcional
-            Si el accidente ocurre en un cruce. Si no se indica y hay
-            `lugar_texto`, se detecta automáticamente (patrón ' - ').
-            Si no hay ninguno de los dos, se asume False.
-        meteorologia : str
-            Una de: 'Seco', 'Lluvia', 'Nieve', 'Niebla', 'Granizo', 'Hielo'.
-        estado_firme : str
-            Uno de: 'Seca Y Limpia', 'Mojada', 'Aceite', 'Barro',
-            'Grava Suelta', 'Hielo'.
-        incluye_moto, incluye_bici : bool
-            Si se sabe que hay una motocicleta/ciclomotor o una bicicleta
-            implicada. No hace falta indicar si hay un peatón implicado:
-            ya se deduce de `tipo_accidente='ATROPELLO'`.
+        `distrito` es uno de los 21 distritos de Madrid (mismo texto que en
+        el dataset original, p. ej. 'CENTRO', 'SALAMANCA'...). `fecha_hora`
+        admite un datetime o un string (p. ej. '2024-03-15 14:30') y se usa
+        para derivar HORA, MES y si es fin de semana. `tipo_accidente` es el
+        tipo tal como lo describiría el aviso (p. ej. 'ATROPELLO',
+        'COLISIÓN DOBLE', 'CAÍDA MOTOCICLETA'...); si no se reconoce (no
+        vista en train), se trata como la categoría de referencia con un
+        aviso por consola.
 
-        Devuelve
-        --------
-        dict con la probabilidad predicha y un resumen de los inputs
-        usados, para poder revisar que se ha interpretado todo bien.
-        """
+        `tipo_via` es una categoría de vía ('CALLE', 'AVENIDA', 'AUTOVIA'...)
+        opcional; si no se indica, se puede derivar de `lugar_texto` con el
+        clasificador de texto libre ya usado en el resto del proyecto.
+        `lugar_texto` es una descripción libre del lugar (p. ej. 'CALLE DE
+        ALCALA - GRAN VIA'), alternativa a pasar `tipo_via`/`es_cruce` ya
+        calculados, y tiene prioridad sobre `tipo_via` si se da. `es_cruce`
+        indica si el accidente ocurre en un cruce; si no se indica y hay
+        `lugar_texto`, se detecta automáticamente (patrón ' - '), y si no
+        hay ninguno de los dos, se asume `False`.
+
+        `meteorologia` es una de 'Seco', 'Lluvia', 'Nieve', 'Niebla',
+        'Granizo', 'Hielo'. `estado_firme` es uno de 'Seca Y Limpia',
+        'Mojada', 'Aceite', 'Barro', 'Grava Suelta', 'Hielo'. `incluye_moto`
+        e `incluye_bici` indican si se sabe que hay una motocicleta/
+        ciclomotor o una bicicleta implicada; no hace falta indicar si hay
+        un peatón implicado, ya se deduce de `tipo_accidente='ATROPELLO'`.
+
+        Devuelve un dict con la probabilidad predicha y un resumen de los
+        inputs usados, para poder revisar que se ha interpretado todo bien."""
         assert self.ajustado, "El pipeline no está ajustado: llama a .fit(df_train) o .load(path) primero."
 
         fecha_hora = pd.to_datetime(fecha_hora)

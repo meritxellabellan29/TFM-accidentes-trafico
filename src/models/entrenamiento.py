@@ -102,9 +102,15 @@ def explorar_hiperparametros(estimador_factory, grid, X_train, y_train, cv_split
     `grid` es un dict {parametro: [valores a probar]}, igual que
     `sklearn.model_selection.ParameterGrid`.
 
-    Devuelve una tabla ordenada por AUC_cv descendente, con una columna
-    `gap_train_cv` para poder elegir a ojo la combinación con mejor
-    compromiso entre AUC y generalización."""
+    Devuelve una tabla ordenada por AUC_cv descendente, con columnas
+    `gap_train_cv` (compromiso AUC/generalización a ojo) y `AUC_cv_se`
+    (error estándar del AUC_cv entre los `cv_splits` folds) -- esta última
+    permite aplicar la regla de "1 error estándar" (Hastie, Tibshirani &
+    Friedman, *The Elements of Statistical Learning*) al elegir entre
+    configuraciones: la mejor por AUC_cv no siempre es la más adecuada si su
+    ventaja está dentro del ruido de la validación cruzada, y conviene
+    preferir la configuración más simple/regularizada que siga dentro de
+    `mejor_AUC_cv - 1·AUC_cv_se`."""
     from sklearn.model_selection import ParameterGrid, TimeSeriesSplit, cross_val_score
 
     cv = TimeSeriesSplit(n_splits=cv_splits)
@@ -112,7 +118,9 @@ def explorar_hiperparametros(estimador_factory, grid, X_train, y_train, cv_split
 
     for params in ParameterGrid(grid):
         modelo = estimador_factory(**params)
-        auc_cv = cross_val_score(modelo, X_train, y_train, scoring='roc_auc', cv=cv, n_jobs=-1).mean()
+        scores_cv = cross_val_score(modelo, X_train, y_train, scoring='roc_auc', cv=cv, n_jobs=-1)
+        auc_cv = scores_cv.mean()
+        auc_cv_se = scores_cv.std(ddof=1) / np.sqrt(len(scores_cv))
         modelo.fit(X_train, y_train)
         auc_train = roc_auc_score(y_train, modelo.predict_proba(X_train)[:, 1])
 
@@ -120,98 +128,11 @@ def explorar_hiperparametros(estimador_factory, grid, X_train, y_train, cv_split
             **params,
             'AUC_train': round(auc_train, 4),
             'AUC_cv': round(auc_cv, 4),
+            'AUC_cv_se': round(auc_cv_se, 4),
             'gap_train_cv': round(auc_train - auc_cv, 4),
         })
 
     return pd.DataFrame(resultados).sort_values('AUC_cv', ascending=False)
-
-
-def tunear_modelos(X_train, y_train, n_iter=30, cv_splits=5, random_state=42, verbose=1):
-    """Ajusta los 4 modelos candidatos con `RandomizedSearchCV`, usando
-    `TimeSeriesSplit` como esquema de validación cruzada -- coherente con
-    que el problema tiene estructura temporal (evita mezclar años dentro de
-    la propia búsqueda de hiperparámetros).
-
-    Importante: la búsqueda se hace ENTERAMENTE dentro de `X_train`/`y_train`
-    -- el conjunto de test no se toca en ningún momento de este proceso.
-    Solo después de llamar a esta función se debe evaluar el resultado en
-    test, una única vez, con la configuración ya elegida -- mirar el test
-    varias veces mientras se prueban combinaciones sería una fuga de
-    información hacia la evaluación final (el mismo motivo por el que la
-    validación cruzada existe: tunear sin gastar el conjunto de evaluación).
-
-    Devuelve (modelos_tuneados, tabla_resumen): un dict {nombre: modelo ya
-    reentrenado con la mejor configuración sobre TODO X_train} y una tabla
-    con los mejores hiperparámetros y el AUC-ROC medio de validación
-    cruzada de cada uno (no el de test)."""
-    from sklearn.model_selection import RandomizedSearchCV, TimeSeriesSplit
-    from scipy.stats import randint, uniform
-
-    cv = TimeSeriesSplit(n_splits=cv_splits)
-
-    espacios = {
-        'Regresión logística': (
-            LogisticRegression(class_weight='balanced', max_iter=2000, random_state=random_state),
-            {'C': uniform(0.01, 10)},
-        ),
-        'Random Forest': (
-            RandomForestClassifier(class_weight='balanced', random_state=random_state, n_jobs=-1),
-            {
-                'max_depth': randint(3, 15),
-                'n_estimators': randint(100, 400),
-                'max_samples': uniform(0.2, 0.7),
-                'min_samples_leaf': randint(1, 50),
-            },
-        ),
-        'Gradient Boosting (Hist)': (
-            HistGradientBoostingClassifier(class_weight='balanced', random_state=random_state),
-            {
-                'max_leaf_nodes': randint(10, 63),
-                'learning_rate': uniform(0.02, 0.28),
-                'l2_regularization': uniform(0.0, 1.0),
-                'max_iter': randint(80, 300),
-                'min_samples_leaf': randint(10, 50),
-            },
-        ),
-    }
-
-    if XGBOOST_DISPONIBLE:
-        ratio_desbalanceo = (y_train == 0).sum() / (y_train == 1).sum()
-        espacios['XGBoost'] = (
-            XGBClassifier(scale_pos_weight=ratio_desbalanceo, random_state=random_state,
-                           eval_metric='logloss', n_jobs=-1),
-            {
-                'max_depth': randint(2, 8),
-                'learning_rate': uniform(0.01, 0.29),
-                'n_estimators': randint(80, 300),
-                'reg_alpha': uniform(0.0, 1.0),
-                'reg_lambda': uniform(0.5, 2.0),
-                'subsample': uniform(0.6, 0.4),
-                'colsample_bytree': uniform(0.6, 0.4),
-            },
-        )
-
-    modelos_tuneados = {}
-    filas_resumen = {}
-
-    for nombre, (estimador, espacio) in espacios.items():
-        if verbose:
-            print(f'Tuneando {nombre}...')
-        busqueda = RandomizedSearchCV(
-            estimador, param_distributions=espacio, n_iter=n_iter,
-            scoring='roc_auc', cv=cv, random_state=random_state, n_jobs=-1, refit=True,
-        )
-        busqueda.fit(X_train, y_train)
-        modelos_tuneados[nombre] = busqueda.best_estimator_
-        filas_resumen[nombre] = {
-            **busqueda.best_params_,
-            'AUC-ROC_cv': round(busqueda.best_score_, 4),
-        }
-        if verbose:
-            print(f'  Mejor AUC-ROC (CV): {busqueda.best_score_:.4f} | params: {busqueda.best_params_}')
-
-    tabla_resumen = pd.DataFrame(filas_resumen).T
-    return modelos_tuneados, tabla_resumen
 
 
 def evaluar_modelo(modelo, X, y, umbral=0.5):
@@ -261,7 +182,7 @@ def curva_calibracion(y_test, y_proba, n_bins=10):
 
     Relevante especialmente aquí porque el split es temporal (train
     2012-2017, test 2018) y la tasa de gravedad real desciende año a año
-    (~10.9% en 2012 a ~8.2% en 2018) — un modelo entrenado con una tasa base
+    (~10.2% en 2012 a ~8.2% en 2018) — un modelo entrenado con una tasa base
     más alta podría sobreestimar sistemáticamente el riesgo en 2018."""
     frac_positivos, prob_media_predicha = calibration_curve(y_test, y_proba, n_bins=n_bins, strategy='quantile')
     return pd.DataFrame({
