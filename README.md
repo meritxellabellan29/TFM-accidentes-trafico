@@ -50,9 +50,12 @@ TFM/
 ├── scripts/
 │   ├── predict.py                        # Predicción por línea de comandos sobre un Excel nuevo
 │   ├── streamlit_app.py                  # Demo de triaje individual (Streamlit)
-│   └── sincronizar_modelos_webapp.py     # Copia los .joblib a webapp/models/ antes de desplegar
+│   ├── sincronizar_modelos_webapp.py     # Copia los .joblib a webapp/models/ antes de desplegar
+│   └── generar_informe_prevencion.py     # Informe PDF de prevención vial para las autoridades (Pregunta 2)
 │
 ├── webapp/                # App Flask de triaje (despliegue independiente, importa código de src/)
+│
+├── reports/                # Informe de prevención vial generado (HTML + PDF)
 │
 ├── figures/                # Gráficos exportados
 │

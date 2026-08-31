@@ -128,6 +128,49 @@ def tabla_shap_por_distrito(shap_values, muestra, pipe, columna='TASA_GRAVEDAD_H
     return resumen
 
 
+def tabla_efecto_binario(shap_values, muestra, columnas, log_odds_base=None):
+    """Para cada variable binaria en `columnas`, traduce su contribución
+    SHAP a una probabilidad de gravedad media estimada por el modelo cuando
+    la variable vale 1 frente a cuando vale 0.
+
+    Es más intuitivo que `tabla_importancia_shap` para un público no
+    técnico (informe de prevención): esta última promedia el valor
+    absoluto de la contribución sobre todas las filas, mezclando en un
+    único número los casos en los que la variable empuja el riesgo hacia
+    arriba y hacia abajo. Aquí se separan ambos grupos y se expresan como
+    un porcentaje directamente comparable con la tasa de gravedad global.
+
+    `shap_values` y `muestra` deben ser el mismo objeto `shap.Explanation`
+    y el mismo DataFrame usados para calcularlo (igual que en
+    `tabla_shap_por_distrito`); `log_odds_base` por defecto se toma de
+    `shap_values.base_values`, igual que en `tabla_importancia_shap`, para
+    que ambas tablas sean siempre consistentes entre sí. Devuelve un
+    DataFrame con columnas variable, n_con, n_sin, pct_gravedad_con,
+    pct_gravedad_sin y diferencia_puntos, ordenado por esta última."""
+    valores = np.asarray(shap_values.values)
+    if log_odds_base is None:
+        log_odds_base = float(np.mean(np.asarray(shap_values.base_values)))
+
+    filas = []
+    for col in columnas:
+        idx = list(muestra.columns).index(col)
+        es_uno = muestra[col].to_numpy() == 1
+        shap_con = valores[es_uno, idx].mean() if es_uno.any() else np.nan
+        shap_sin = valores[~es_uno, idx].mean() if (~es_uno).any() else np.nan
+        pct_con = _log_odds_a_probabilidad(log_odds_base + shap_con) * 100
+        pct_sin = _log_odds_a_probabilidad(log_odds_base + shap_sin) * 100
+        filas.append({
+            'variable': col,
+            'n_con': int(es_uno.sum()),
+            'n_sin': int((~es_uno).sum()),
+            'pct_gravedad_con': round(pct_con, 2),
+            'pct_gravedad_sin': round(pct_sin, 2),
+            'diferencia_puntos': round(pct_con - pct_sin, 2),
+        })
+
+    return pd.DataFrame(filas).sort_values('diferencia_puntos', ascending=False).reset_index(drop=True)
+
+
 def tabla_odds_ratios(modelo_logreg, feature_names, top_n=15):
     """Extrae automáticamente de una `LogisticRegression` binaria ya
     entrenada los *odds ratios* de cada variable -- `exp(coeficiente)` --
