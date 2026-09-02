@@ -45,7 +45,7 @@ from src.utils.interpretabilidad import tabla_shap_por_distrito
 REPORTS_DIR = Path(__file__).resolve().parent.parent / 'reports'
 
 COLOR_NAVY = '#1a2b4a'
-COLOR_RED = '#c0392b'
+COLOR_RED = '#cb181d'
 COLOR_GRIS = '#5a6472'
 COLOR_FONDO_CARD = '#f4f6f9'
 

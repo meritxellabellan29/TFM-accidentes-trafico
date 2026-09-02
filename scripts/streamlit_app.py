@@ -52,8 +52,8 @@ except FileNotFoundError as e:
 
 st.title("🚨 Triaje de accidentes de tráfico — Madrid")
 st.caption(
-    "Apoyo a la priorización de recursos de emergencia (SAMUR / Policía Municipal / "
-    "Emergencias 112) con la información disponible en el momento del aviso."
+    "Apoyo a la priorización de recursos en el momento del aviso al 112 — SAMUR, Policía "
+    "Municipal, Bomberos — con la información disponible en ese instante."
 )
 
 # --- Listas de opciones, derivadas dinámicamente del propio pipeline entrenado ---
