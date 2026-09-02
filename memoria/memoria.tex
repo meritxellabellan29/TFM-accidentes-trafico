@@ -18,6 +18,32 @@
 \usepackage[colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue]{hyperref}
 \usepackage{titlesec}
 \usepackage{setspace}
+\usepackage{listings}
+
+\lstdefinestyle{python}{
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\bfseries,
+  commentstyle=\itshape\color{gray},
+  stringstyle=\color{gray},
+  showstringspaces=false,
+  breaklines=true,
+  breakatwhitespace=false,
+  frame=single,
+  framesep=4pt,
+  xleftmargin=2pt,
+  xrightmargin=2pt,
+  tabsize=4,
+  language=Python,
+  columns=fullflexible,
+}
+\lstset{style=python}
+\renewcommand{\lstlistingname}{Código}
+\lstset{
+  literate=
+   {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+   {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+   {ñ}{{\~n}}1 {Ñ}{{\~N}}1 {ü}{{\"u}}1 {º}{{\textordmasculine}}1
+}
 
 \setstretch{1.06}
 \setlength{\parskip}{0.4em}
@@ -46,17 +72,20 @@
 {\large Trabajo Fin de Máster}\\[2cm]
 
 \begin{tabular}{rl}
-\textbf{Autora:} & Meritxell Abellán Collado \\[0.3cm]
+\textbf{Autora:} & Meritxell Abellan Collado \\[0.3cm]
 \textbf{Tutores:} & Carlos Ortega \\
  & Santiago Mota \\
 \end{tabular}
 
 \vfill
-{\large 2026}
+{\large Septiembre 2026}
 
 \end{titlepage}
 
 \tableofcontents
+\newpage
+
+\listoffigures
 \newpage
 
 % =============================================================================
@@ -65,9 +94,9 @@
 
 \subsection{Contexto y motivación}
 
-Los accidentes de tráfico son una de las principales causas de mortalidad y morbilidad evitable en entornos urbanos. Madrid, como una de las ciudades con mayor volumen de tráfico de España, registra miles de accidentes al año con niveles de gravedad muy dispares --- desde ilesos hasta heridos graves y fallecidos. Anticipar qué factores incrementan el riesgo de un desenlace grave tiene valor tanto operativo (priorización de recursos de emergencia) como preventivo (diseño de campañas de seguridad vial dirigidas).
+Los accidentes de tráfico son una de las principales causas de mortalidad evitable en entornos urbanos. Madrid, como una de las ciudades con mayor volumen de tráfico de España, registra miles de accidentes al año con niveles de gravedad muy dispares --- desde ilesos hasta heridos graves y fallecidos. Anticipar qué factores incrementan el riesgo de un desenlace grave tiene valor tanto operativo (priorización de recursos de emergencia) como preventivo (diseño de campañas de seguridad vial dirigidas).
 
-Este trabajo utiliza el conjunto de datos abiertos de accidentalidad del Ayuntamiento de Madrid correspondiente al periodo 2012--2018, con información a nivel de persona implicada (conductor, pasajero o peatón) para cada accidente registrado. Es un dataset real, de publicación pública, con los defectos de calidad de dato habituales de una fuente administrativa --- valores sin asignar, inconsistencias de formato, duplicados de exportación--- que se auditan y documentan de forma explícita a lo largo del trabajo, en lugar de darlos por resueltos.
+Este trabajo utiliza el conjunto de datos abiertos de accidentalidad del Ayuntamiento de Madrid correspondiente al periodo 2012--2018, con información a nivel de persona implicada (conductor, pasajero o peatón) para cada accidente registrado. Es un dataset real, de publicación pública, con los defectos de calidad de dato habituales de una fuente administrativa --- valores sin asignar, inconsistencias de formato, duplicados de exportación--- que se auditan y documentan de forma explícita a lo largo del trabajo.
 
 \subsection{Dos preguntas de investigación}
 
@@ -75,10 +104,10 @@ El trabajo aborda dos preguntas complementarias, que comparten el mismo dataset 
 
 \begin{itemize}
 \item \textbf{Pregunta 1 --- Triaje operativo:} ¿es posible anticipar, con la información disponible en el momento del aviso de un accidente (ubicación, momento, condiciones meteorológicas, tipo de vía y tipo de siniestro), la probabilidad de que resulte grave, con el fin de apoyar la priorización de los recursos de emergencia --- SAMUR, Policía Municipal, Bomberos--- que se despachan a través del 112 tras la llamada?
-\item \textbf{Pregunta 2 --- Prevención vial:} ¿qué factores --- de lugar, momento, tipo de vía, tipo de siniestro y perfil de las personas implicadas --- se asocian con una mayor gravedad, con el fin de informar campañas de prevención vial dirigidas (por ejemplo, focalizadas en distritos concretos, franjas horarias de mayor riesgo o colectivos de edad más vulnerables)?
+\item \textbf{Pregunta 2 --- Prevención vial:} ¿qué factores --- lugar, tipo de siniestro, perfil de las personas implicadas... --- se asocian con una mayor gravedad, con el fin de informar campañas de prevención vial dirigidas (por ejemplo, focalizadas en distritos concretos, franjas horarias de mayor riesgo o colectivos de edad más vulnerables)?
 \end{itemize}
 
-Estas dos preguntas no son intercambiables. La Pregunta 1 exige que toda variable usada esté disponible \textbf{en el momento del aviso}, antes de que los servicios de emergencia lleguen al lugar y confirmen quién está implicado: un modelo que use el perfil demográfico exacto de las personas implicadas no podría desplegarse nunca en producción para decidir cuántos recursos enviar, por bien que prediga en retrospectiva --- estaría resolviendo, en la práctica, un problema distinto al planteado. La Pregunta 2 no tiene esa restricción --- diseñar una campaña de prevención no requiere predecir nada en tiempo real --- y precisamente ahí, en el perfil de los implicados, reside gran parte de la señal explicativa más útil para la prevención (por ejemplo, qué rangos de edad concentran más riesgo). Tratarlas como una sola pregunta forzaría a elegir entre un modelo desplegable con menos señal o un modelo con más señal pero inútil en producción; en su lugar, se construyen dos modelos con propósitos explícitos y distintos, evaluados con criterios distintos, sobre dos matrices de variables distintas construidas a partir del mismo dataset base.
+Estas dos preguntas no son intercambiables. La Pregunta 1 exige que toda variable esté disponible en el momento del aviso: un modelo que use el perfil demográfico exacto de los implicados no podría desplegarse nunca para decidir cuántos recursos enviar, por bien que prediga en retrospectiva. La Pregunta 2 no tiene esa restricción, y precisamente en ese perfil reside gran parte de la señal más útil para la prevención (por ejemplo, qué rangos de edad concentran más riesgo). Por eso se construyen dos modelos con propósitos distintos, evaluados con criterios distintos, sobre dos matrices de variables distintas construidas a partir del mismo dataset base.
 
 \subsection{Objetivos específicos}
 
@@ -91,7 +120,18 @@ Estas dos preguntas no son intercambiables. La Pregunta 1 exige que toda variabl
 \item Llevar el modelo de triaje más allá del entorno de notebook, mediante un pipeline reutilizable y una aplicación funcional de demostración.
 \end{enumerate}
 
-Más allá de aplicar directamente un conjunto de algoritmos estándar sobre los datos ya limpios --- lo que hoy resolvería razonablemente bien una herramienta de AutoML--- el trabajo pone el énfasis en las decisiones metodológicas que rodean a esos algoritmos y que determinan si sus resultados son fiables: la disciplina de disponibilidad temporal entre las dos preguntas, la detección y corrección de pseudo-replicación estadística en el análisis exploratorio, la verificación explícita de los supuestos de cada test antes de confiar en su resultado, el diseño de una ingeniería de variables que evita fugas de información y trampas de colinealidad conocidas, la validación por deriva temporal del propio periodo de prueba, y la contrastación cruzada de los hallazgos de interpretabilidad con un segundo modelo de naturaleza completamente distinta. Cada una de estas decisiones se documenta con su justificación en las secciones siguientes.
+Más allá de aplicar un conjunto de algoritmos estándar sobre datos ya limpios, el trabajo pone el énfasis en las decisiones metodológicas que determinan si esos resultados son fiables:
+
+\begin{itemize}[nosep]
+\item Disponibilidad temporal entre las dos preguntas;
+\item Detección y corrección de pseudo-replicación estadística en el análisis exploratorio;
+\item Verificación explícita de los supuestos de cada test antes de confiar en su resultado;
+\item Ingeniería de variables que evita fugas de información y trampas de colinealidad conocidas;
+\item Validación por deriva temporal del propio periodo de prueba;
+\item Contraste cruzado de los hallazgos de interpretabilidad con un segundo modelo de naturaleza distinta.
+\end{itemize}
+
+Cada una de estas decisiones se documenta con su justificación en las secciones siguientes.
 
 % =============================================================================
 \section{Datos y análisis exploratorio}
@@ -101,55 +141,86 @@ Más allá de aplicar directamente un conjunto de algoritmos estándar sobre los
 
 El conjunto de datos original contiene 199.078 registros a nivel de persona implicada, correspondientes a 68.773 accidentes únicos ocurridos en Madrid entre el 1 de enero de 2012 y el 31 de diciembre de 2018 en los 21 distritos de la ciudad. Las variables se agrupan en siete bloques: identificación del accidente y la persona; tiempo (fecha, franja horaria, día de la semana); lugar (distrito, descripción libre de la vía); condiciones atmosféricas y estado del firme (doce columnas binarias); tipo de siniestro; perfil de la persona (sexo, tramo de edad, tipo de vehículo, rol); y la variable de interés, la lesividad sufrida por cada implicado (ilesa, herida leve, herida grave o fallecida).
 
-\subsection{Auditoría de duplicados}
+\subsection{Analisis de duplicados}
 
-Antes de cualquier análisis se auditó la presencia de registros duplicados, distinguiendo dos niveles de exigencia. Se encontraron 4.065 filas exactamente idénticas en todas sus columnas (2,33\,\% del total tras excluir testigos): dado que la probabilidad de coincidencia genuina en absolutamente todas las variables --- incluyendo vehículo, lesividad, tramo de edad y sexo--- es extremadamente baja, se interpretan como errores de exportación y se eliminan. Un segundo grupo, más laxo, de 1.252 registros comparte el mismo perfil demográfico (mismo accidente, mismo tipo de persona, sexo, tramo de edad y lesividad) pero difiere en alguna otra columna, como el tipo de vehículo; al no poder descartarse que se trate de personas distintas con un perfil parecido, este segundo grupo se documenta como una limitación de calidad del dato pero no se elimina. Esta distinción --- entre lo que es estadísticamente insostenible como coincidencia y lo que simplemente es una limitación conocida--- se mantiene como criterio a lo largo de todo el trabajo: no se corrige nada que no se pueda justificar con evidencia.
+Se auditó la presencia de duplicados en dos niveles:
+
+\begin{itemize}[nosep]
+\item 4.065 filas exactamente idénticas en todas sus columnas (2,33\,\% del total tras excluir testigos). Coincidir por azar en absolutamente todas las variables --- vehículo, lesividad, tramo de edad, sexo--- es prácticamente imposible, así que se interpretan como errores de exportación y se eliminan.
+\item 1.252 registros con el mismo perfil demográfico (mismo accidente, tipo de persona, sexo, tramo de edad y lesividad) pero que difieren en alguna otra columna. Al no poder descartarse que sean personas distintas con un perfil parecido, se documentan como limitación de calidad del dato pero no se eliminan.
+\end{itemize}
+
+Este criterio --- corregir solo lo estadísticamente insostenible, documentar el resto--- se mantiene en todo el trabajo.
 
 Tras excluir los 24.725 testigos (que no son implicados con lesividad propia y no aportan señal para el objetivo) y los duplicados exactos, el dataset de trabajo a nivel persona queda en 170.288 registros.
 
 \subsection{La variable objetivo}
 
-La variable de gravedad se agrega a nivel accidente como el máximo de lesividad entre todos sus implicados: un accidente se considera \textbf{grave} si al menos una persona resultó herida grave o fallecida, y \textbf{leve} en caso contrario. Antes de tomar esta decisión se investigó si la falta de asignación de lesividad (3,78\,\% de los registros de persona) es aleatoria. El desglose muestra que no lo es: por año oscila de forma estable entre el 3,17\,\% y el 5,18\,\%, y por distrito entre el 3\,\% y el 5,12\,\% sin diferencias relevantes, pero por tipo de accidente el rango es mucho más amplio (2,14\,\% a 17,16\,\%), concentrándose de forma marcada en los choques contra objetos fijos (17,16\,\%) y las caídas de vehículos de tres ruedas (16,67\,\%) --- entre cuatro y ocho veces más que el resto de tipos.
+La variable de gravedad se agrega a nivel accidente como el máximo de lesividad entre todos sus implicados: un accidente se considera \textbf{grave} si al menos una persona resultó herida grave o fallecida, y \textbf{leve} en caso contrario. 
+Antes de tomar esta decisión se investigó si la falta de asignación de lesividad (3,78\,\% de los registros de persona) es aleatoria. El desglose muestra que no lo es: por año oscila de forma estable entre el 3,17\,\% y el 5,18\,\%, y por distrito entre el 3\,\% y el 5,12\,\% sin diferencias relevantes, pero por tipo de accidente el rango es mucho más amplio (2,14\,\% a 17,16\,\%), concentrándose de forma marcada en los choques contra objetos fijos (17,16\,\%) y las caídas de vehículos de tres ruedas (16,67\,\%) --- entre cuatro y ocho veces más que el resto de tipos.
 
-Este patrón podría haber sesgado el target si se hubiera mantenido tras agregar a nivel accidente, así que se comprobó el impacto real: de los 4.041 accidentes de tipo choque contra objeto fijo, ninguno se pierde por completo, porque siempre queda al menos un implicado con lesividad conocida; lo mismo ocurre para el conjunto completo de 68.773 accidentes. El riesgo residual --- que la persona sin lesividad asignada fuera, en realidad, la más gravemente herida y el accidente quede infravalorado--- se estimó en un 1,7\,\% del dataset, concentrado en ese mismo tipo de accidente. Como segunda comprobación, independiente de la primera, se comparó el número de víctimas declarado en el propio dataset con el recuento real de heridos y fallecidos por accidente, encontrando un desajuste del 1,44\,\% --- del mismo orden de magnitud que el riesgo estimado, y coherente con la hipótesis de que se explica por personas con lesividad no asignada que sí eran víctimas, no por un error de captura de otra naturaleza.
+Este patrón podría haber sesgado el target si se hubiera mantenido tras agregar a nivel accidente, así que se comprobó el impacto real: de los 68.773 accidentes registrados, ninguno se pierde por completo, porque siempre queda al menos un implicado con lesividad conocida. El riesgo residual --- que la persona sin lesividad asignada fuera la más gravemente herida y el accidente quede infravalorado--- se estimó en un 1,7\,\% del dataset. Como segunda comprobación, independiente de la primera, se comparó el número de víctimas declarado en el propio dataset con el recuento real de heridos y fallecidos por accidente, encontrando un desajuste del 1,44\,\% --- del mismo orden de magnitud que el riesgo estimado, y coherente con la hipótesis de que se explica por personas con lesividad no asignada que sí eran víctimas, no por un error de captura de otra naturaleza.
 
-El resultado es un fuerte desequilibrio de clases: a nivel accidente, solo el 9,60\,\% resultan graves (ratio aproximado 9,4:1); a nivel persona, el desequilibrio es aún mayor (4,31\,\%, ratio 22,2:1), porque un mismo accidente grave puede implicar a varias personas ilesas. Este desequilibrio condiciona toda la fase de modelización: la métrica de referencia no puede ser la exactitud (\emph{accuracy}), que con un clasificador ingenuo que prediga siempre ``no grave'' ya alcanzaría un 90,4\,\%, sino medidas que tienen en cuenta el desequilibrio, como el área bajo la curva ROC y bajo la curva precisión-recall.
+El resultado es un fuerte desequilibrio de clases: a nivel accidente, solo el 9,60\,\% resultan graves (ratio aproximado 9,4:1); a nivel persona, el desequilibrio es aún mayor (4,31\,\%, ratio 22,2:1), porque un mismo accidente grave puede implicar a varias personas ilesas. Este desequilibrio condiciona toda la fase de modelización: la métrica de referencia no puede ser la exactitud (\emph{accuracy}), que con un clasificador que predijera siempre ``no grave'' ya alcanzaría un 90,4\,\%, sino medidas que tienen en cuenta el desequilibrio, como el área bajo la curva ROC y bajo la curva precisión-recall.
 
 \subsection{Perfil de los implicados}
 
-A nivel persona, los conductores son el rol más frecuente (72\,\%), seguidos de viajeros y peatones, pero son los \textbf{peatones} quienes concentran la mayor proporción de heridos graves y fallecidos, lo que los convierte en el colectivo más vulnerable. Los hombres representan un mayor volumen de accidentalidad que las mujeres, aunque con una gravedad relativa similar. Por tramo de edad, los mayores de 65 años y los menores de 18 muestran la mayor gravedad relativa --- coherente con una mayor vulnerabilidad física en los extremos de edad--- mientras que los tramos de 25 a 44 años concentran el mayor volumen, por ser los conductores más activos. Por tipo de vehículo, motocicletas y bicicletas presentan la mayor tasa de lesividad grave, mientras que los turismos concentran el mayor volumen absoluto.
+\begin{itemize}[nosep]
+\item \textbf{Rol:} los conductores son el más frecuente (72\,\%), pero los peatones concentran la mayor proporción de heridos graves y fallecidos --- el colectivo más vulnerable.
+\item \textbf{Sexo:} los hombres registran más volumen de accidentalidad que las mujeres, con gravedad relativa similar.
+\item \textbf{Edad:} mayores de 65 y menores de 18 muestran la mayor gravedad relativa; los tramos de 25 a 44 años concentran el mayor volumen, por ser los conductores más activos.
+\item \textbf{Vehículo:} motocicletas y bicicletas tienen la mayor tasa de lesividad grave; los turismos concentran el mayor volumen absoluto.
+\end{itemize}
 
-Un 18\,\% de los registros de persona no tiene tipo de vehículo asignado; a diferencia de la lesividad, aquí la falta de dato no es un problema de calidad sino estructural: el 99,94\,\% de los peatones no tiene vehículo asignado, lo cual es lógico --- un peatón no conduce ninguno--- mientras que conductores y viajeros tienen el dato casi completo. No se trata, por tanto, como una limitación a corregir.
+Un 18\,\% de los registros de persona no tiene tipo de vehículo asignado, pero no es un problema de calidad sino estructural: el 99,94\,\% de los peatones no tiene vehículo (lógico, un peatón no conduce ninguno), mientras que conductores y viajeros tienen el dato casi completo.
 
 \subsection{Análisis temporal}
 
-El número de accidentes registrados crece a lo largo del periodo, con una estacionalidad anual clara: octubre, noviembre y junio concentran la mayor accidentalidad, mientras que julio y agosto son los meses con menos siniestros, probablemente por la reducción del tráfico en periodo vacacional. Los días laborables concentran más accidentes que el fin de semana, coincidiendo con los desplazamientos al trabajo, y las franjas horarias de mayor volumen son las horas punta (9h, 14h y 17h). El cruce de día de la semana y franja horaria (figura~\ref{fig:heatmap}) muestra además un punto de máxima concentración muy concreto: el viernes entre las 14h y las 16h.
+El número de accidentes crece a lo largo del periodo, con estacionalidad clara: octubre, noviembre y junio concentran más accidentalidad; julio y agosto, menos, probablemente por el tráfico vacacional. Los días laborables superan al fin de semana, y las horas punta (9h, 14h, 17h) son las de mayor volumen. El cruce de día y franja horaria (figura~\ref{fig:heatmap}) señala un punto de máxima concentración muy concreto: el viernes entre las 14h y las 16h.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.72\textwidth]{../figures/07d_heatmap_dia_hora.png}
+\includegraphics[width=0.8\textwidth]{../figures/07d_heatmap_dia_hora.png}
 \caption{Mapa de calor de accidentalidad por día de la semana y franja horaria.}
 \label{fig:heatmap}
 \end{figure}
 
 \subsection{Análisis geográfico}
 
-El distrito donde ocurre el accidente explica razonablemente bien su \emph{volumen}, pero --- como ya adelanta la tabla de asociación de la sección siguiente--- apenas diferencia su \emph{gravedad}. Al cruzar el número de accidentes por distrito con su población media del periodo (figura~\ref{fig:poblacion}), se observa que una población más alta no se traduce directamente en más accidentes: Salamanca, Chamartín y Centro lideran la tasa de accidentalidad por cada 100.000 habitantes (por encima de 490 accidentes/100.000 hab./año) sin ser los distritos más poblados, lo que apunta al tráfico de paso --- gente que atraviesa el distrito sin residir en él--- como factor determinante del volumen. Distritos periféricos con alta población, como Latina, Carabanchel o Fuencarral, presentan en cambio tasas moderadas (por debajo de 300). De forma notable, los distritos con mayor proporción de heridos graves o fallecidos --- Villa de Vallecas, Vicálvaro y Barajas--- no coinciden con los de mayor accidentalidad absoluta, lo que sugiere que el tipo de vía (carreteras de alta velocidad en la periferia) influye más en la gravedad que el volumen bruto de tráfico.
+El distrito explica razonablemente bien el \emph{volumen} de accidentes, pero apenas su \emph{gravedad}. Al cruzar accidentes por distrito con población media (figura~\ref{fig:poblacion}), una población más alta no se traduce en más accidentes: Salamanca, Chamartín y Centro lideran la tasa por 100.000 habitantes sin ser los más poblados, lo que apunta al tráfico de paso como factor determinante del volumen. En cambio, los distritos con mayor proporción de heridos graves (figura~\ref{fig:tasa_distrito}) --- Vicálvaro, Latina, Puente y Villa de Vallecas--- no coinciden con los de mayor accidentalidad absoluta, lo que sugiere que el tipo de vía (carreteras de alta velocidad en la periferia) pesa más en la gravedad que el volumen bruto de tráfico.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.68\textwidth]{../figures/08b_scatter_poblacion_accidentes.png}
+\includegraphics[width=0.8\textwidth]{../figures/08b_scatter_poblacion_accidentes.png}
 \caption{Población media frente a accidentes totales por distrito (el tamaño de cada punto representa la tasa de accidentes por 100.000 habitantes).}
 \label{fig:poblacion}
 \end{figure}
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.62\textwidth]{../figures/08c_tasa_grave_distrito.png}
+\caption{Tasa de accidentes graves o mortales por distrito (2012--2018), frente a la media global (9,6\,\%).}
+\label{fig:tasa_distrito}
+\end{figure}
+
 \subsection{Condiciones del accidente}
 
-El tipo de siniestro más frecuente es la colisión doble (más del 50\,\% de los accidentes), seguido del atropello y la caída de motocicleta; sin embargo, el tipo con mayor proporción de heridos graves es la caída de bicicleta. La condición meteorológica predominante es la vía seca (87,2\,\% de los accidentes), que también presenta la mayor tasa de gravedad entre las condiciones con muestra suficiente (4,43\,\%); de forma contraintuitiva, la lluvia se asocia con una tasa de gravedad \emph{menor} (3,43\,\%, diferencia estadísticamente significativa), un patrón coherente con la hipótesis de compensación de riesgo, según la cual los conductores extreman la precaución en condiciones adversas. El estado del firme con mayor tasa de accidentes graves es la grava suelta (10,35\,\%) y el aceite en la vía (4,64\,\%), aunque son situaciones poco frecuentes; la gran mayoría de accidentes ocurre en firme seco y limpio.
+\begin{itemize}[nosep]
+\item \textbf{Tipo de siniestro:} la colisión doble es la más frecuente (>50\,\%), seguida del atropello y la caída de motocicleta; la caída de bicicleta tiene la mayor proporción de heridos graves.
+\item \textbf{Meteorología:} predomina la vía seca (87,2\,\%), con la mayor tasa de gravedad entre las condiciones con muestra suficiente (4,43\,\%). De forma contraintuitiva, la lluvia se asocia con \emph{menor} gravedad (3,43\,\%, diferencia significativa) --- coherente con la hipótesis de compensación de riesgo: los conductores extreman la precaución en condiciones adversas.
+\item \textbf{Estado del firme:} la grava suelta (10,35\,\%) y el aceite (4,64\,\%) tienen la mayor tasa de gravedad, aunque son poco frecuentes; la gran mayoría de accidentes ocurre en firme seco y limpio.
+\end{itemize}
 
 \subsection{Asociación estadística con la gravedad}
 
-Para identificar qué variables se asocian más con la gravedad se calculó la V de Cramér de cada variable categórica frente al objetivo, junto con un test de independencia chi-cuadrado. Un aspecto metodológico central aquí es que las variables de persona (tipo de persona, sexo, tramo de edad, tipo de vehículo) varían entre los implicados de un mismo accidente, mientras que las variables de accidente (distrito, franja horaria, día, tipo de siniestro, condiciones atmosféricas) son idénticas para todos ellos. Testear estas últimas al nivel de persona repetiría cada accidente una vez por implicado, inflando artificialmente el tamaño muestral efectivo y, con él, el estadístico de asociación --- un problema de pseudo-replicación que, de no corregirse, sobrestima la relevancia de esas variables. Cada variable se testeó por tanto en su nivel real de variación, y el umbral de significancia de los tests chi-cuadrado se corrigió por el número de comparaciones realizadas (corrección de Bonferroni, $\alpha = 0{,}0024$ para 21 variables).
+Para identificar qué variables se relacionan más con la gravedad se calculó la \textbf{V de Cramér} de cada variable categórica frente al objetivo --- de 0 (nula) a 1 (perfecta) --- junto con un \textbf{test chi-cuadrado} que confirma si la relación es significativa o podría deberse al azar (función y corrección de Bonferroni en el Anexo~\ref{app:cramer}). Un punto metodológico central: las variables de persona (tipo de persona, sexo, edad, vehículo) varían entre los implicados de un mismo accidente, pero las de accidente (distrito, franja horaria, tipo de siniestro...) son idénticas para todos ellos. Testear estas últimas a nivel persona repetiría cada accidente una vez por implicado, inflando el tamaño muestral y sobrestimando su relevancia (pseudo-replicación). Por eso cada variable se testeó en su nivel real de variación, y el umbral de significancia se corrigió por el número de comparaciones (Bonferroni, $\alpha = 0{,}0024$ para 21 variables).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{../figures/10a_cramer_v_asociacion.png}
+\caption{Asociación de todas las variables categóricas con GRAVE (V de Cramér). Las condiciones atmosféricas y de firme más raras (granizo, hielo, nieve...) quedan cerca de cero, coherente con su tamaño muestral insuficiente.}
+\label{fig:cramer}
+\end{figure}
 
 \begin{table}[h]
 \centering
@@ -172,7 +243,7 @@ Distrito & 0,018 & Accidente & Explica el volumen, apenas la gravedad \\
 \label{tab:cramer}
 \end{table}
 
-El test chi-cuadrado, ya corregido por nivel, confirma como significativas (tras Bonferroni) todas las variables de la tabla~\ref{tab:cramer} salvo el mes, además de la lluvia, la vía seca, el firme mojado y el firme seco entre las condiciones atmosféricas. El resto de condiciones meteorológicas y de firme --- granizo, hielo, niebla, nieve, aceite, barro, grava suelta--- no resultan significativas, pero por un motivo distinto al que podría parecer: se trata de condiciones extremadamente raras (por ejemplo, el granizo aparece en solo 9 accidentes de la muestra de test usada más adelante), y ni el chi-cuadrado ni una confirmación posterior con el test exacto de Fisher tienen potencia suficiente para concluir nada con esos tamaños muestrales. El resultado ``no significativo'' en estos casos se documenta explícitamente como una limitación de tamaño muestral, no como evidencia de ausencia de asociación real --- una distinción metodológica que se mantiene también en la fase de interpretabilidad.
+El chi-cuadrado, ya corregido, confirma como significativas todas las variables de la tabla~\ref{tab:cramer} salvo el mes, más la lluvia y la vía seca. Las condiciones más raras --- granizo, hielo, niebla, nieve, aceite, grava suelta--- quedan cerca de cero en la figura~\ref{fig:cramer}, pero no porque no haya asociación: son tan poco frecuentes (el granizo aparece en solo 9 accidentes de la muestra de test) que ni el chi-cuadrado ni el test exacto de Fisher tienen potencia suficiente para concluir nada. Es una limitación de tamaño muestral, no evidencia de ausencia de asociación --- distinción que se mantiene también en la fase de interpretabilidad.
 
 Como comprobación adicional, se cruzaron pares de variables para detectar efectos condicionados que un análisis univariante no vería: los peatones atropellados presentan la tasa de heridos graves y fallecidos más alta de todas las combinaciones persona-accidente, y las personas mayores de 65 años muestran una gravedad más alta con independencia del tipo de vehículo que conducían o en el que viajaban --- dos patrones que anticipan lo que después confirma, de forma independiente, el análisis de interpretabilidad del modelo explicativo.
 
@@ -182,40 +253,49 @@ Como comprobación adicional, se cruzaron pares de variables para detectar efect
 
 \subsection{De nivel persona a nivel accidente}
 
-El dataset crudo está a nivel persona, pero el objeto de estudio final es el accidente. La transformación agrega los registros por identificador de accidente y separa las variables en dos grupos: las de \emph{accidente} (fecha, distrito, tipo de vía, condiciones), que son invariantes dentro de un mismo accidente --- se comprobó explícitamente, columna por columna, que ninguna varía dentro de un mismo identificador antes de asumirlo sin más--- y las de \emph{persona}, que no tienen un valor único por accidente y se preservan como indicadores de implicación (por ejemplo, si hubo al menos un peatón implicado, una motocicleta, o una persona en un tramo de edad de riesgo) en lugar de descartarlas, ya que resultaron ser las de mayor asociación con la gravedad en el análisis exploratorio.
+El dataset crudo está a nivel persona, pero el objeto de estudio es el accidente. La transformación agrega los registros por accidente y separa las variables en dos grupos: las de \emph{accidente} (fecha, distrito, tipo de vía, condiciones), invariantes dentro de un mismo accidente --- comprobado explícitamente columna por columna--- y las de \emph{persona}, que se preservan como indicadores de implicación (¿hubo un peatón, una moto, una persona en edad de riesgo?) por ser las de mayor asociación con la gravedad en el EDA.
 
-Una de las variables de lugar, la descripción libre de la vía, tiene una cardinalidad demasiado alta (más de 13.000 valores únicos) para usarse directamente como categórica. Se procesó en dos pasos. Primero, se detectó que una parte relevante de los registros sigue el formato ``vía 1 --- vía 2'', que identifica una intersección entre dos vías; casi la mitad de los accidentes (46\,\%) ocurre en un cruce. Segundo, se clasificó el tipo de vía (calle, avenida, autovía, carretera, glorieta, etc.) a partir del texto, con una prioridad de mayor a menor velocidad esperada. En una primera versión de este análisis, el tipo de vía se calculaba solo a partir del primer tramo del texto, asumiendo que era el ``principal''; al contrastarlo con los datos se comprobó que el orden en que aparecen los dos tramos es puramente alfabético en el 88\,\% de los casos y no indica en absoluto cuál vía es la relevante, así que se corrigió para usar todo el texto disponible en lugar de depender de la posición.
+La descripción libre de la vía tiene demasiada cardinalidad (>13.000 valores únicos) para usarse como variable categórica. Así que se procesó en dos pasos: 
+\begin{enumerate}[nosep]
+\item Primero, se detectó el patrón ``vía 1 --- vía 2'' que marca una intersección (46\,\% de los accidentes ocurre en un cruce)
+\item Segundo, se clasificó el tipo de vía a partir del texto completo, no solo el primer tramo --- al comprobar que el orden de los dos tramos es alfabético en el 88\,\% de los casos, no indica cuál vía es la relevante (función en el Anexo~\ref{app:preprocesado}).
+\end{enumerate}
 
-El efecto de estar en un cruce resulta débil si se mide de forma aislada (9,45\,\% de gravedad frente a 9,78\,\% fuera de un cruce), lo que a primera vista sugeriría descartarlo como variable poco útil. Sin embargo, condicionado al tipo de vía y al tipo de accidente, su efecto es considerablemente mayor y de signo variable: en las glorietas, el cruce eleva la gravedad de 6,8\,\% a 9,7\,\%; en colisión doble y atropello --- que juntos son el 70\,\% del dataset--- el cruce aumenta la gravedad en 1,2 puntos porcentuales en ambos casos, y en colisión múltiple y vuelco el aumento es de 1,7 y 4,2 puntos respectivamente; en categorías más pequeñas, como caída de bicicleta o ciclomotor, el signo incluso se invierte. El efecto marginal (0,32 puntos) diluye estas diferencias porque, al mezclar todos los tipos en una sola comparación, la distinta composición de tipos de accidente entre cruces y no-cruces enmascara el efecto real. Por este motivo se conservó la variable, no por su efecto marginal, sino porque su interacción con el tipo de vía y el tipo de accidente resulta claramente informativa.
+El efecto de estar en un cruce es débil si se mide de forma aislada (9,45\,\% frente a 9,78\,\%), pero condicionado al tipo de vía y de accidente es mayor y de signo variable: en glorietas eleva la gravedad de 6,8\,\% a 9,7\,\%; en vuelco, +4,2 puntos; en categorías pequeñas como caída de bicicleta, el signo incluso se invierte. La distinta composición de tipos de accidente entre cruces y no-cruces enmascara este efecto real cuando se mide de forma agregada --- por eso se conservó la variable: no por su efecto marginal, sino por su interacción con tipo de vía y de accidente.
 
-El número de víctimas por accidente, la única variable numérica original del dataset, se descartó explícitamente como predictor: al definirse la gravedad como el máximo entre los implicados, un accidente con más víctimas tiene, casi por construcción matemática, más probabilidad de que alguna sea grave. Incluirla introduciría fuga de información, ya que en el momento del aviso no se conoce todavía cuántas víctimas habrá.
+El número de víctimas se descartó como predictor: al definirse la gravedad como el máximo entre los implicados, más víctimas implica casi por construcción más probabilidad de que alguna sea grave, y en el momento del aviso no se conoce ese número todavía --- incluirla introduciría fuga de información.
 
 \subsection{Datos ausentes}
 
-Tras agregar a nivel accidente no quedan valores ausentes relevantes en las variables destinadas a modelización; las únicas columnas con algún hueco residual son de texto libre que no se usan directamente. Se estableció, de todos modos, una regla explícita para el caso de que el pipeline se reejecute sobre datos nuevos con huecos: las categóricas se imputan con la categoría explícita ``Desconocido'' en lugar de eliminar filas --- coherente con que, en este mismo dominio, el propio ``no asignado'' resultó ser informativo (por ejemplo, en el tipo de vehículo de los peatones)--- y las numéricas se imputarían con la mediana calculada exclusivamente sobre el conjunto de entrenamiento, nunca sobre el dataset completo, para no filtrar información del conjunto de prueba.
+Tras agregar a nivel accidente no quedan valores ausentes relevantes en las variables de modelización. Se estableció, de todos modos, una regla explícita para datos nuevos con huecos: las categóricas se imputan con ``Desconocido'' en lugar de eliminar filas, y las numéricas con la mediana del conjunto de entrenamiento, nunca del dataset completo, para no filtrar información hacia el conjunto de prueba.
 
 \subsection{División en conjuntos de entrenamiento y prueba}
 
-Al tratarse de una serie de varios años, se valoraron dos estrategias de división: una temporal (entrenamiento con los datos de 2012 a 2017, prueba con 2018) y una aleatoria estratificada por la variable objetivo. La primera es más honesta de cara a un despliegue real, porque permite comprobar si el modelo generaliza a un periodo que no ha visto, con la tendencia temporal real del fenómeno; la segunda sirve como referencia secundaria, con una distribución de clases idéntica en ambos conjuntos. Se generaron ambas divisiones, documentando la temporal como principal. Cualquier estadístico derivado de los datos --- medias históricas, categorías de referencia, medianas de imputación--- se ajusta exclusivamente sobre el conjunto de entrenamiento y se aplica después al de prueba, replicando exactamente lo que ocurriría con datos nuevos en producción; el desequilibrio de clases (9,6\,\% de accidentes graves) se deja deliberadamente sin corregir en esta fase, como una decisión propia de la modelización y no del preprocesado.
+Se valoraron dos estrategias: una temporal (entrenamiento 2012--2017, prueba 2018) y una aleatoria estratificada. La temporal es más honesta de cara a un despliegue real --- comprueba si el modelo generaliza a un periodo no visto--- y se documenta como principal; la aleatoria sirve de referencia secundaria. Cualquier estadístico derivado de los datos (medias históricas, categorías de referencia, medianas) se ajusta solo sobre entrenamiento y se aplica después a prueba, replicando lo que ocurriría en producción. El desequilibrio de clases (9,6\,\% graves) se deja sin corregir aquí, como decisión de la fase de modelización.
 
 \subsection{Dos matrices de variables}
 
 Coherente con las dos preguntas de investigación, se construyeron dos matrices de variables a partir del mismo conjunto preprocesado:
 
 \begin{itemize}
-\item \textbf{Matriz operativa} (39 variables): únicamente información disponible en el momento del aviso --- lugar, momento, condiciones, tipo de vía y de siniestro, más un agregado histórico de gravedad y de composición de vehículos por distrito.
-\item \textbf{Matriz de referencia} (43 variables): todo lo anterior más las variables de persona --- presencia de peatón, presencia de una persona en edad de riesgo, número de personas implicadas y número de víctimas (transformado logarítmicamente, para atenuar su fuerte asimetría).
+\item \textbf{Matriz operativa} (39 variables): únicamente información disponible en el momento del aviso (lugar, momento, condiciones, tipo de vía y de siniestro, más un agregado histórico de gravedad y de composición de vehículos por distrito).
+\item \textbf{Matriz de referencia} (43 variables): todo lo anterior más las variables de persona (presencia de peatón, presencia de una persona en edad de riesgo, número de personas implicadas y número de víctimas, transformado logarítmicamente, para atenuar su fuerte asimetría).
 \end{itemize}
 
-Dado que el distrito ya se representa mediante un agregado histórico, no se le aplica adicionalmente una codificación \emph{one-hot}, que sería redundante y aumentaría innecesariamente la dimensionalidad. Ese agregado histórico se calcula mediante un suavizado tipo Bayes empírico: la tasa de un distrito con pocos accidentes se combina con la tasa global, ponderando por el tamaño de muestra, de modo que un distrito pequeño con una tasa extrema por puro azar no distorsione el modelo --- la misma idea que una codificación por frecuencia (\emph{target encoding}) clásica, pero evitando que las categorías con pocos casos introduzcan ruido. Sobre el propio conjunto de entrenamiento, este agregado se calcula además fuera de muestra (con particiones internas), de modo que ninguna fila contribuye a su propio valor; sobre el conjunto de prueba se aplica directamente el mapeo completo aprendido en entrenamiento.
+El distrito ya se representa mediante un agregado histórico, así que no se le aplica además un \emph{one-hot} redundante. Ese agregado se calcula con un suavizado tipo \textbf{Bayes empírico}: la tasa de un distrito con pocos accidentes se combina con la tasa global, ponderada por tamaño de muestra, para que una tasa extrema por puro azar no distorsione el modelo (\emph{target encoding}). En entrenamiento se calcula además fuera de muestra, para que ninguna fila contribuya a su propio valor; en prueba se aplica el mapeo ya aprendido (código en el Anexo~\ref{app:encoding}).
 
-Las variables cíclicas (hora del día, mes) se codificaron mediante seno y coseno, para que el modelo no interprete que la medianoche y las once de la noche están tan alejadas como sea posible, cuando en realidad son casi contiguas en el ciclo diario. Las variables de tipo de vía y tipo de accidente, de cardinalidad baja y sin orden natural entre categorías, se codificaron en \emph{one-hot}, usando como categoría de referencia la más frecuente de cada una (calle y colisión doble, respectivamente) para que los coeficientes de un modelo lineal se interpreten como ``frente al caso más común''.
+Las \textbf{variables cíclicas} (hora, mes) se codificaron en seno/coseno, para que el modelo no interprete la medianoche y las once de la noche como opuestos. Tipo de vía y tipo de accidente se codificaron en \emph{one-hot} con la categoría más frecuente (calle, colisión doble) como referencia.
 
-Por último, se detectó que las columnas de condición meteorológica y de estado del firme, aunque llegaban como doce columnas binarias independientes, son en realidad dos variables categóricas ya codificadas en \emph{one-hot}: en el 99,9\,\% de los casos exactamente una de las seis columnas meteorológicas vale uno. Usar las seis a la vez por grupo introduciría la trampa clásica de la variable ficticia --- una colinealidad casi perfecta, de $-0{,}98$ entre las dos condiciones más frecuentes--- por lo que se eliminó la categoría de referencia de cada grupo (vía seca y firme seco y limpio), dejando solo las condiciones anómalas, cuya sola ausencia ya implica la condición normal.
+Las doce columnas de meteorología y firme resultaron ser dos variables categóricas ya codificadas en \emph{one-hot} encubierto (en el 99,9\,\% de los casos, solo una de las seis meteorológicas vale uno): usarlas todas introduciría la trampa clásica de la variable ficticia (colinealidad de $-0{,}98$ entre las dos más frecuentes), así que se eliminó la categoría de referencia de cada grupo (vía seca, firme seco y limpio).
 
 \subsection{Revisión final de colinealidad}
 
-Antes de dar el conjunto final por bueno se revisó la colinealidad en dos pasos. Primero, un cribado amplio por pares de variables sobre las 39 variables operativas: quedan tres pares por encima de una correlación de 0,6, todos con una explicación sustantiva razonable y no un error de codificación --- la lluvia y el firme mojado (0,89, porque cuando llueve el firme suele estar mojado), y la tasa histórica de gravedad del distrito con sus dos agregados de composición de peatones y motos (0,61 y 0,67, esperable al ser los tres agregados del mismo distrito). Segundo, la confirmación con el factor de inflación de la varianza (VIF), que mide cuánto se puede predecir cada variable a partir de todas las demás combinadas, no solo de otra tomada de dos en dos: ninguna variable superó un VIF de 10 (el umbral habitual de alerta), y las dos correlaciones más altas por pares (lluvia y firme mojado) quedan en un VIF de en torno a 5,2, justo en el borde de la zona de vigilancia pero sin traducirse en un problema real. Es decir, una correlación moderada por pares no implica necesariamente un problema de colinealidad frente al conjunto completo de variables, y viceversa --- una distinción que solo el VIF permite hacer con garantías.
+La colinealidad se revisó en dos pasos:
+\begin{enumerate}[nosep]
+\item Primero, un cribado por pares sobre las 39 variables operativas: solo tres pares superan 0,6, todos con explicación sustantiva --- lluvia y firme mojado (0,89), y la tasa histórica de gravedad del distrito con sus agregados de peatones y motos (0,61 y 0,67, esperable al venir del mismo distrito).
+\item  Segundo, el factor de \textbf{inflación de la varianza} (VIF, que mide cuánto predicen todas las demás variables combinadas, no solo una a una): ninguna variable supera 10 (el umbral habitual), y las correlaciones más altas quedan en torno a 5,2, una correlación moderada por pares no implica necesariamente un problema de colinealidad global, y viceversa (cálculo en el Anexo~\ref{app:encoding}).
+\end{enumerate}
+
 
 % =============================================================================
 \section{Modelización}
@@ -223,15 +303,15 @@ Antes de dar el conjunto final por bueno se revisó la colinealidad en dos pasos
 
 \subsection{Algoritmos considerados}
 
-Para ambas preguntas se entrenaron y compararon cuatro familias de modelos: regresión logística (con ponderación de clases), \emph{Random Forest}, \emph{Gradient Boosting} (variante de histograma) y XGBoost. Se descartaron como candidatos principales las máquinas de vectores de soporte y los k-vecinos más próximos: con un dataset de más de 55.000 filas de entrenamiento, decenas de columnas dispersas (mayoritariamente binarias) y un desequilibrio de clases considerable, su coste computacional y su peor encaje con variables de este tipo los hacen poco prácticos frente a los modelos basados en árboles y en boosting, que además no requieren escalado de variables. La elección de cuatro modelos, y no solo uno, responde también a que representan familias de complejidad distinta --- un modelo lineal simple e interpretable por diseño, un ensamblado por remuestreo (\emph{bagging}) y dos ensamblados por potenciación de gradiente (\emph{boosting})--- lo que permite comparar no solo el rendimiento final sino también su comportamiento frente al sobreajuste.
+Se entrenaron y compararon cuatro modelos: regresión logística (con ponderación de clases), \emph{Random Forest}, \emph{Gradient Boosting} (variante de histograma) y XGBoost, tres familias de complejidad distinta (lineal, \emph{bagging}, \emph{boosting}), para comparar no solo el rendimiento sino también su comportamiento frente al sobreajuste. Se descartaron SVM y k-neighbors, ya que con más de 55.000 filas, decenas de columnas dispersas y desequilibrio de clases, su coste computacional y peor encaje con este tipo de variables los hace poco prácticos frente a árboles y \emph{boosting}, que además no requieren escalado.
 
-Aunque la variable objetivo es binaria (grave/no grave), ninguno de los cuatro algoritmos predice directamente esa etiqueta: internamente, todos estiman una \textbf{probabilidad continua} de que el accidente sea grave, entre 0 y 1, y la etiqueta binaria se obtiene solo al final, aplicando un umbral sobre esa probabilidad (por defecto, 0,5). Todas las métricas de este trabajo --- el área bajo la curva ROC, el área bajo la curva precisión-recall, el score de Brier, los propios valores SHAP--- se calculan sobre esa probabilidad continua, no sobre la etiqueta ya umbralizada; es también esa misma probabilidad, sin convertir a una decisión binaria, la que se muestra como resultado en la aplicación de demostración descrita en la Sección~7.
+Aunque la variable objetivo es binaria (grave/no grave), ninguno de los cuatro algoritmos predice directamente esa etiqueta: todos estiman una \textbf{probabilidad continua} entre 0 y 1, y la etiqueta se obtiene solo al final, aplicando un umbral (por defecto, 0,5). Todas las métricas de este trabajo --- el área bajo la curva ROC, el área bajo la curva precisión-recall, el \emph{score} de Brier (que mide cuánto se alejan, en promedio, las probabilidades predichas de lo que realmente ocurrió), los propios valores SHAP--- se calculan sobre esa probabilidad continua, no sobre la etiqueta ya umbralizada; es también esa misma probabilidad, sin convertir a una decisión binaria, la que se muestra como resultado en la aplicación de demostración descrita en la Sección~6.
 
 \subsection{Ajuste de hiperparámetros, validación y seguimiento de experimentos}
 
-Cada modelo se ajustó primero sin tunear, para observar su comportamiento ``de fábrica'', y después con una rejilla manual y explícita de combinaciones de hiperparámetros --- en lugar de una búsqueda aleatoria--- para poder inspeccionar directamente el compromiso entre rendimiento y sobreajuste en cada combinación concreta. La validación durante el ajuste se realizó con una partición temporal dentro del propio conjunto de entrenamiento, consistente con la naturaleza temporal del problema, y el sobreajuste se midió siempre como la diferencia entre el área bajo la curva ROC en entrenamiento y en esa validación cruzada --- nunca contra el conjunto de prueba, que solo se evalúa una única vez, al final, con la configuración ya elegida, para no introducir una fuga de información hacia la evaluación final.
+Cada modelo se ajustó primero sin tunear, para observar su comportamiento predeterminado, y después con una rejilla manual y explícita de combinaciones de hiperparámetros --- en lugar de una búsqueda aleatoria--- para poder inspeccionar directamente el compromiso entre rendimiento y sobreajuste en cada combinación concreta (la función que ejecuta esta rejilla se reproduce en el Anexo~\ref{app:hiperparametros}). La validación durante el ajuste se realizó con una partición temporal dentro del propio conjunto de entrenamiento, consistente con la naturaleza temporal del problema, y el sobreajuste se midió siempre como la diferencia entre el área bajo la curva ROC en entrenamiento y en esa validación cruzada --- nunca contra el conjunto de prueba, que solo se evalúa una única vez, al final, con la configuración ya elegida, para no introducir una fuga de información hacia la evaluación final.
 
-Los cinco grids de esta fase --- regresión logística, análisis de estabilidad del \emph{bagging}, \emph{Random Forest}, \emph{Gradient Boosting} y XGBoost--- se registraron además en Weights \& Biases, para poder comparar todas las combinaciones probadas en un panel interactivo en lugar de leer las tablas ordenadas a ojo. Es importante precisar el alcance de este seguimiento: cubre \textbf{únicamente el ajuste del modelo operativo} de esta sección (Pregunta 1); el modelo explicativo de la Sección 5.5 (Pregunta 2) no pasa por ningún grid de hiperparámetros ni por Weights \& Biases, ya que se entrena con la configuración por defecto de cada algoritmo. Figura~\ref{fig:wandb} muestra, a modo de ejemplo, el panel correspondiente al grid de XGBoost --- el algoritmo finalmente elegido--- con cada combinación de profundidad, tasa de aprendizaje y regularización coloreada según su área bajo la curva ROC de validación cruzada.
+Los cinco grids de esta fase se registraron en Weights \& Biases, para comparar todas las combinaciones en un panel interactivo. Este seguimiento cubre \textbf{únicamente el modelo operativo} (Pregunta 1): el modelo explicativo (Sección~4.5) no pasa por ningún grid, ya que usa la configuración por defecto de cada algoritmo. Figura~\ref{fig:wandb} muestra el panel de XGBoost --- el algoritmo elegido--- coloreado por área bajo la curva ROC de validación cruzada.
 
 \begin{figure}[h]
 \centering
@@ -240,13 +320,14 @@ Los cinco grids de esta fase --- regresión logística, análisis de estabilidad
 \label{fig:wandb}
 \end{figure}
 
-La regresión logística apenas varía con su parámetro de regularización (rejilla de cinco valores entre 0,01 y 5,0): el sobreajuste se mantiene siempre pequeño (entre 0,006 y 0,008), al ser un modelo lineal con poca capacidad de sobreajustar en primer lugar, por lo que se eligió el valor por defecto.
+Por modelo, lo más relevante del ajuste (fortalezas y debilidades completas en la tabla~\ref{tab:fortalezas}):
 
-El \emph{Random Forest} sin tunear mostró un sobreajuste severo --- área bajo la curva ROC de entrenamiento prácticamente perfecta frente a una de prueba mucho más baja--- el patrón clásico de árboles sin límite de profundidad que memorizan su propia muestra. Se analizó primero con una rejilla de estabilidad en tres dimensiones (profundidad máxima, proporción de muestra por árbol y número de árboles): con árboles sin límite de profundidad el sobreajuste ronda entre 0,30 y 0,34 con independencia de los otros dos parámetros, mientras que limitar la profundidad a 5 o 10 lo reduce a entre 0,03 y 0,09 --- confirmando que la profundidad, y no el tamaño de muestra ni el número de árboles, es el factor que realmente corrige el problema. Un segundo grid, más fino, sobre la profundidad y el tamaño mínimo de hoja, dio como configuración ganadora una profundidad de 8 con un tamaño mínimo de hoja moderado, sin que el sobreajuste se disparase.
-
-El \emph{Gradient Boosting}, por diseño, controla el sobreajuste mediante una tasa de aprendizaje baja y un número limitado de nodos por árbol, no por la profundidad, y ya generaliza razonablemente bien sin tunear. Sobre una rejilla de tasa de aprendizaje, número de nodos y regularización, la configuración elegida queda prácticamente empatada con la mejor de la rejilla --- una diferencia menor que el error estándar de la validación cruzada--- pero con algo más de regularización, dando un modelo ligeramente más conservador sin coste real de rendimiento.
-
-En XGBoost se añadió, además de su propia rejilla de profundidad, tasa de aprendizaje y regularización, una parada temprana real: el modelo entrena hasta 500 árboles pero, evaluando contra una partición de validación separada dentro del propio entrenamiento, conserva solo los que mejoran de verdad esa validación --- en la configuración final, 140 de los 150 árboles máximos permitidos.
+\begin{itemize}[nosep]
+\item \textbf{Regresión logística:} apenas varía con la regularización (gap siempre 0,006--0,008); se mantuvo el valor por defecto.
+\item \textbf{Random Forest:} sin tunear, sobreajuste severo (patrón clásico de árboles sin límite de profundidad). Una rejilla de estabilidad en tres dimensiones confirmó que la profundidad --- no el tamaño de muestra ni el número de árboles--- es lo que corrige el problema (gap de 0,30--0,34 sin límite, a 0,03--0,09 limitando a 5--10). Configuración final: profundidad 8 (función en el Anexo~\ref{app:validaciones}).
+\item \textbf{Gradient Boosting:} controla el sobreajuste por diseño (tasa de aprendizaje baja, nodos limitados) y ya generaliza bien sin tunear; la configuración elegida añade algo más de regularización sin coste real de rendimiento.
+\item \textbf{XGBoost:} parada temprana real --- entrena hasta 500 árboles pero conserva solo los que mejoran una partición de validación separada; configuración final, 140 de 150 árboles permitidos.
+\end{itemize}
 
 \subsection{Resultados del modelo de triaje operativo}
 
@@ -267,7 +348,32 @@ Regresión logística & 0,699 & 0,158 & 0,222 & 0,009 \\
 \label{tab:comparacion_operativo}
 \end{table}
 
-XGBoost resulta el modelo operativo elegido, con el mejor área bajo la curva ROC de prueba y un compromiso train-test moderado, seguido muy de cerca por \emph{Gradient Boosting}. El \emph{Random Forest}, incluso ya corregido con su mejor configuración, queda por debajo de los otros tres --- el \emph{bagging} generaliza peor aquí que el \emph{boosting} para este problema--- y la regresión logística, pese a ser el modelo más simple, resulta sorprendentemente competitiva, una señal de que buena parte de la información predictiva es aproximadamente lineal. Figura~\ref{fig:roc} muestra las curvas ROC de los cuatro modelos.
+\textbf{XGBoost es el modelo operativo elegido}: mejor área bajo la curva ROC y compromiso train-test moderado, seguido muy de cerca por \emph{Gradient Boosting}. El \emph{Random Forest} queda por debajo de los otros tres (el \emph{bagging} generaliza peor que el \emph{boosting} aquí), y la regresión logística es sorprendentemente competitiva --- señal de que buena parte de la información predictiva es aproximadamente lineal. La tabla~\ref{tab:fortalezas} resume fortalezas y debilidades de cada técnica más allá del ranking, y la figura~\ref{fig:roc} sus curvas ROC.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{p{2.4cm}p{1.3cm}p{4.6cm}p{4.6cm}}
+\toprule
+\textbf{Modelo} & \textbf{AUC-ROC} & \textbf{Fortalezas} & \textbf{Debilidades} \\
+\midrule
+Regresión logística & 0,699 &
+Interpretable por diseño (sus coeficientes se leen directamente como razones de probabilidades); apenas sobreajusta (gap 0,009); coste computacional mínimo. &
+Solo capta relaciones lineales entre variables; no detecta por sí sola interacciones (p. ej. cruce $\times$ tipo de vía) sin que se incluyan explícitamente. \\
+\emph{Random Forest} & 0,692 &
+Robusto a valores atípicos; no exige escalado de variables; sirve de referencia adicional de importancia de variables. &
+Propenso a un sobreajuste severo si no se limita la profundidad (gap hasta 0,30 sin límite); incluso ya corregido, es el modelo con peor discriminación de los cuatro en este problema. \\
+\emph{Gradient Boosting} & 0,706 &
+Controla el sobreajuste ``de fábrica'' (tasa de aprendizaje baja, nodos limitados); capta interacciones no lineales sin especificarlas a mano; generaliza bien casi sin tunear. &
+Menos interpretable que un modelo lineal; su rendimiento es sensible a la tasa de aprendizaje y a la regularización elegidas. \\
+\textbf{XGBoost} & \textbf{0,708} &
+Mejor discriminación de los cuatro; parada temprana real (entrena hasta 500 árboles pero solo conserva los que mejoran la validación); mejor compromiso train-test de los tres ensamblados (gap 0,015). &
+El más complejo de ajustar (más hiperparámetros); menos transparente que un modelo lineal; depende de una librería externa a scikit-learn. \\
+\bottomrule
+\end{tabular}
+\caption{Precisión, fortalezas y debilidades de cada técnica de modelización empleada, para el modelo de triaje operativo.}
+\label{tab:fortalezas}
+\end{table}
 
 \begin{figure}[h]
 \centering
@@ -278,37 +384,33 @@ XGBoost resulta el modelo operativo elegido, con el mejor área bajo la curva RO
 
 \subsection{Calibración y deriva temporal}
 
-Con un umbral de decisión fijo de 0,5, varios modelos muestran una sensibilidad (\emph{recall}) baja pese a un buen poder de discriminación --- no porque discriminen peor, sino porque, con solo un 9,6\,\% de casos graves, sus probabilidades rara vez superan 0,5 de forma natural. Por esta razón las métricas principales son el área bajo la curva ROC y bajo la curva precisión-recall, no la exactitud ni una medida dependiente de un umbral concreto; el umbral, en un caso de uso real, debería fijarse aparte según el coste relativo de un falso negativo frente a un falso positivo.
+Con un umbral de decisión fijo de 0,5, la matriz de confusión de XGBoost sobre el conjunto de prueba (figura~\ref{fig:confusion}) hace tangible el compromiso real que implica ese umbral. De los 874 accidentes realmente graves en 2018, el modelo detecta 614 (sensibilidad o \emph{recall} del 70,3\,\%), pero a costa de 4.062 falsas alarmas sobre los 6.356 accidentes que en realidad no eran graves: de cada accidente marcado como grave, solo el 13,1\,\% (\emph{precisión}) lo es de verdad. Esto no es un fallo del modelo, sino la consecuencia directa de entrenar con ponderación de clases (\texttt{class\_weight='balanced'}, o su equivalente en XGBoost) para que no ignore la clase minoritaria --- un ajuste que desplaza el umbral efectivo de decisión y favorece deliberadamente la sensibilidad sobre la precisión, precisamente el compromiso que interesa en un contexto de triaje, donde el coste de no avisar de un accidente grave (falso negativo) es mayor que el de una alerta de más (falso positivo). Por esta razón las métricas principales de comparación entre modelos son el área bajo la curva ROC y bajo la curva precisión-recall, que no dependen de un umbral concreto; el umbral de 0,5 usado aquí es solo ilustrativo, y en un despliegue real debería ajustarse explícitamente según el coste relativo de cada tipo de error --- y conviene que quien opere la aplicación de triaje (Sección~6.3) conozca esta baja precisión: la mayoría de las alertas de gravedad alta serán, en la práctica, falsas alarmas.
 
-Además, la tasa de gravedad real desciende de forma consistente año a año, de un 10,2\,\% en 2012 a un 8,2\,\% en 2018, por lo que el conjunto de entrenamiento (9,86\,\% de gravedad) y el de prueba (8,19\,\%) tienen tasas base distintas. Para separar si un peor ajuste de calibración se debe a esta deriva real o a un defecto del propio modelo o de la partición temporal, se entrenó el mismo modelo, con idéntica configuración, sobre la partición temporal y sobre una partición aleatoria estratificada. El área bajo la curva ROC resultó similar en ambas particiones, pero la diferencia de tasa base entre entrenamiento y prueba es prácticamente nula en la partición aleatoria y notablemente negativa en la temporal --- confirmando que el desajuste de calibración es una propiedad real de la evolución de los datos en el tiempo, no un defecto del modelo, y que conviene documentar la necesidad de una recalibración periódica como limitación conocida de cara a un despliegue real.
-
-Como comprobación adicional de que el año elegido para la prueba (2018) es representativo, se realizó una validación de ventana expansiva: entrenar con todos los años anteriores a uno dado y validar sobre ese año, avanzando de 2014 a 2018 (tabla~\ref{tab:walkforward}). El área bajo la curva ROC de validación se mantiene estable, entre 0,69 y 0,71, en los cinco años probados, y el valor de 2018 (el conjunto de prueba real del proyecto) queda dentro de ese rango --- no es un año atípico frente al comportamiento general del modelo, lo que respalda la elección del split temporal como validación principal.
-
-\begin{table}[h]
+\begin{figure}[htbp]
 \centering
-\small
-\begin{tabular}{cccc}
-\toprule
-\textbf{Año de validación} & \textbf{Filas de entrenamiento} & \textbf{Tasa de gravedad (val.)} & \textbf{AUC-ROC} \\
-\midrule
-2014 & 18.222 & 10,87\,\% & 0,712 \\
-2015 & 27.786 & 9,72\,\% & 0,689 \\
-2016 & 37.497 & 9,13\,\% & 0,708 \\
-2017 & 47.686 & 8,77\,\% & 0,692 \\
-2018 & 58.095 & 8,19\,\% & 0,707 \\
-\bottomrule
-\end{tabular}
-\caption{Validación de ventana expansiva: entrenamiento con todos los años anteriores, validación año a año.}
-\label{tab:walkforward}
-\end{table}
+\includegraphics[width=0.85\textwidth]{../figures/16_matrices_confusion_modelos.png}
+\caption{Matrices de confusión de los cuatro modelos operativos sobre el conjunto de prueba (2018), umbral de 0,5, normalizadas por fila (porcentaje sobre cada clase real).}
+\label{fig:confusion}
+\end{figure}
+
+Además, la tasa de gravedad real desciende año a año, de un 10,2\,\% en 2012 a un 8,2\,\% en 2018 (figura~\ref{fig:walkforward}), por lo que entrenamiento (9,86\,\%) y prueba (8,19\,\%) parten de tasas base distintas. Para descartar que esto sea un defecto del modelo o de la partición, se entrenó el mismo modelo sobre la partición temporal y sobre una aleatoria estratificada: el área bajo la curva ROC fue similar en ambas, pero la diferencia de tasa base solo aparece en la temporal --- confirma que es una deriva real de los datos, no del modelo, y que un despliegue real necesitaría recalibración periódica (función en el Anexo~\ref{app:validaciones}).
+
+Como comprobación adicional de que 2018 es representativo, se validó con ventana expansiva: entrenar con todos los años anteriores y validar sobre el siguiente, de 2014 a 2018. El área bajo la curva ROC se mantiene estable (0,69--0,71, figura~\ref{fig:walkforward}) pese al descenso de la tasa de gravedad --- 2018 no es un año atípico, lo que respalda el split temporal como validación principal.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.72\textwidth]{../figures/14_validacion_walkforward.png}
+\caption{Validación de ventana expansiva (2014--2018): el área bajo la curva ROC se mantiene estable pese al descenso sostenido de la tasa de gravedad real.}
+\label{fig:walkforward}
+\end{figure}
 
 \subsection{Modelo explicativo y comparación entre preguntas}
 
-Antes de presentar los resultados conviene precisar qué significa ``elegir el mejor modelo'' cuando el objetivo ya no es desplegarlo, sino interpretarlo. La interpretabilidad no es gratuita: los valores SHAP y los \emph{odds ratios} de la Sección~6 solo son fiables si proceden de un modelo que realmente ha aprendido las relaciones presentes en los datos, no de uno que discrimina poco o que está sobreajustado a su propia muestra de entrenamiento --- explicar un mal modelo produce patrones espurios, no hallazgos. Por eso, aunque el fin de esta pregunta sea explicativo, sigue haciendo falta un paso de modelización, con un criterio de selección distinto al del modelo operativo: se entrenan los mismos cuatro algoritmos con su configuración por defecto, sin ninguna rejilla, y se elige el que mejor generaliza (área bajo la curva ROC de prueba, vigilando su diferencia con entrenamiento) para servir de base a la interpretación. La ausencia de grid aquí no es una omisión: tunear también el modelo explicativo perseguiría maximizar su rendimiento, un objetivo ajeno a esta pregunta, y rompería la comparación en igualdad de condiciones entre los cuatro algoritmos, ya que cada uno se beneficiaría de forma distinta del ajuste. Por la misma razón se descarta limitarse a una regresión logística, pese a ser interpretable por diseño: un modelo lineal puede no capturar relaciones no lineales o de interacción presentes en los datos, como el efecto de composición entre número de personas implicadas y tipo de accidente que se documenta en la Sección~6.2. En su lugar, se elige el algoritmo ganador de la comparación para la interpretación principal, y se mantiene la regresión logística en paralelo como contraste explícito (Sección~6.1): que dos modelos de naturaleza tan distinta coincidan en qué variables dominan respalda que el hallazgo es un patrón real, no un artefacto de un único algoritmo ya optimizado.
+¿Qué significa ``elegir el mejor modelo'' cuando el objetivo ya no es desplegarlo, sino interpretarlo? La interpretabilidad no es gratuita: los valores SHAP y los \emph{odds ratios} de la Sección~5 solo son fiables si vienen de un modelo que realmente aprendió las relaciones de los datos --- explicar un mal modelo produce patrones espurios, no hallazgos. Por eso se entrenan los mismos cuatro algoritmos, esta vez con su configuración por defecto y sin ninguna rejilla (tunear aquí rompería la comparación en igualdad de condiciones), y se elige el que mejor generaliza para servir de base a la interpretación. Tampoco basta con una regresión logística, pese a ser interpretable por diseño: un modelo lineal puede no captar relaciones no lineales, como el efecto de composición de la Sección~5.2. Por eso se elige el algoritmo ganador para la interpretación principal, manteniendo la regresión logística en paralelo como contraste (Sección~5.1): que dos modelos tan distintos coincidan en qué variables dominan respalda que el hallazgo es real, no un artefacto de un único algoritmo.
 
-El modelo explicativo, entrenado con la matriz de referencia (43 variables, incluido el perfil de las personas implicadas), se evaluó con los mismos cuatro candidatos. De nuevo \emph{Gradient Boosting} obtiene el mejor resultado, con un área bajo la curva ROC de prueba de 0,724, seguido de la regresión logística (0,712); \emph{Random Forest} y XGBoost, en su configuración por defecto sin tunear específicamente para esta segunda matriz, muestran aquí un sobreajuste marcado (0,693 y 0,684 de área bajo la curva de prueba, con una diferencia respecto a entrenamiento de 0,31 y 0,19 respectivamente) --- coherente con lo ya observado en la Sección 5.2 sobre la necesidad de limitar la complejidad de estos dos algoritmos para este problema.
+El modelo explicativo, entrenado con la matriz de referencia (43 variables, incluido el perfil de personas), se evaluó con los mismos cuatro candidatos. De nuevo \emph{Gradient Boosting} gana (AUC-ROC 0,724), seguido de la regresión logística (0,712); \emph{Random Forest} y XGBoost, sin tunear para esta matriz, sobreajustan marcadamente (0,693 y 0,684, con gap de 0,31 y 0,19) --- coherente con la Sección~4.2 sobre limitar su complejidad.
 
-Comparado el mejor modelo operativo (XGBoost, 0,708) con el mejor modelo explicativo (\emph{Gradient Boosting}, 0,724), la mejora es real pero modesta: en torno a 1,6 puntos porcentuales de área bajo la curva ROC y 1,0 punto de área bajo la curva precisión-recall. Esto indica que las variables disponibles en el momento del aviso ya capturan la mayor parte de la señal predictiva, y que el perfil de las personas implicadas aporta valor incremental sin ser el factor dominante --- lo que refuerza que un sistema de triaje basado únicamente en información del aviso es razonable, y que el valor añadido de las variables de persona reside más en la \textbf{interpretación} orientada a prevención que en la mejora bruta de la predicción.
+Frente al mejor modelo operativo (XGBoost, 0,708), la mejora es real pero modesta: ~1,6 puntos de AUC-ROC. Las variables del momento del aviso ya capturan la mayor parte de la señal; el perfil de personas aporta valor incremental sin ser dominante --- su valor está más en la \textbf{interpretación para prevención} que en la mejora bruta de predicción.
 
 % =============================================================================
 \section{Interpretabilidad y hallazgos para la prevención}
@@ -316,7 +418,7 @@ Comparado el mejor modelo operativo (XGBoost, 0,708) con el mejor modelo explica
 
 \subsection{Metodología}
 
-El análisis de interpretabilidad se realizó sobre el modelo explicativo, mediante valores SHAP (\emph{SHapley Additive exPlanations}), que descomponen cada predicción individual en la contribución de cada variable, en la escala logarítmica de las probabilidades (\emph{log-odds}) que usa internamente el modelo. Para traducir esa contribución a una magnitud más intuitiva --- puntos porcentuales de probabilidad--- es necesario partir del punto base real que usa el propio explicador, y no de la tasa media bruta del dataset, porque el modelo se entrena con ponderación de clases y su punto de partida en la escala logarítmica no coincide con esa tasa bruta. Para validar que los hallazgos no dependen de un único algoritmo, se entrenó además una regresión logística sobre las mismas variables, cuyos coeficientes se interpretan directamente como razones de probabilidades (\emph{odds ratios}): que dos modelos de naturaleza tan distinta --- un ensamblado de árboles y un modelo lineal--- coincidan en qué variables dominan refuerza que el hallazgo es un patrón real en los datos, no un artefacto de un algoritmo concreto.
+La idea central de los valores SHAP (\emph{SHapley Additive exPlanations}) es repartir el resultado de cada predicción entre las variables que la explican. Descomponen cada predicción en la contribución de cada variable, en la escala logarítmica del modelo (\emph{log-odds}); para traducir esa contribución a puntos de probabilidad hace falta partir del punto base real del explicador, no de la tasa media bruta, porque el modelo se entrena con ponderación de clases. Para validar que los hallazgos no dependen de un único algoritmo, se entrenó además una regresión logística cuyos coeficientes se leen como razones de probabilidades (\emph{odds ratios}): que dos modelos tan distintos coincidan en qué variables dominan refuerza que el hallazgo es real, no un artefacto de un algoritmo (funciones en el Anexo~\ref{app:interpretabilidad}).
 
 \subsection{Factores de mayor peso}
 
@@ -343,15 +445,23 @@ Tasa histórica de gravedad del distrito & 0,027 & 0,6 \\
 \label{tab:shap}
 \end{table}
 
-La presencia de una motocicleta o ciclomotor entre los implicados es, con diferencia, la variable de mayor peso --- más del doble que la segunda--- seguida de la presencia de un peatón (tabla~\ref{tab:shap}). Ambas coinciden con el razonamiento de seguridad vial más intuitivo: motoristas y peatones son, por naturaleza, los usuarios de la vía sin protección estructural frente a un impacto, a diferencia de ir dentro de un turismo. La regresión logística confirma la misma jerarquía: la presencia de una motocicleta tiene la razón de probabilidades más alta de todo el modelo (4,68), multiplicando por 4,7 las probabilidades de que el accidente sea grave, manteniendo el resto de variables constantes; el atropello, por su parte, tiene una razón de probabilidades de 3,24, también entre las más altas.
+La presencia de una motocicleta o ciclomotor es, con diferencia, la variable de mayor peso --- más del doble que la segunda--- seguida del peatón (tabla~\ref{tab:shap}): ambos son usuarios de la vía sin protección estructural frente a un impacto, a diferencia de ir en un turismo. La regresión logística confirma la jerarquía: la moto tiene la razón de probabilidades más alta del modelo (4,68, multiplica por 4,7 las probabilidades de gravedad), y el atropello la segunda (3,24).
 
-Un matiz que aporta el propio SHAP: la contribución de que el accidente sea un atropello (0,145) es notablemente menor que la de la presencia de un peatón (0,305), aunque un atropello implica un peatón casi por definición. Esto sugiere que la variable ``presencia de peatón'' está capturando algo más amplio que solo los atropellos --- por ejemplo, un peatón golpeado en una colisión múltiple que no se clasifica como atropello en el tipo de siniestro--- una separación de dos señales que a primera vista podrían parecer redundantes.
+Un matiz de SHAP: la contribución del atropello (0,145) es menor que la del peatón (0,305), aunque un atropello implica un peatón casi por definición --- sugiere que ``presencia de peatón'' capta algo más amplio, como un peatón golpeado en una colisión múltiple no clasificada como atropello.
 
-El número de víctimas (transformado logarítmicamente) aparece en tercera posición, pero debe interpretarse con cautela: al definirse la gravedad como el máximo de lesividad entre los implicados, un accidente con más víctimas tiene, casi por construcción, más probabilidad de que alguna sea grave. Su peso aquí no debe leerse como un hallazgo de prevención accionable, sino como un reflejo del propio diseño de la variable objetivo, y no se utiliza en el modelo operativo precisamente por este motivo.
+El número de víctimas (log) aparece tercero, pero con cautela: al ser la gravedad el máximo entre implicados, más víctimas implica casi por construcción más probabilidad de que alguna sea grave. No es un hallazgo accionable, sino un reflejo del diseño de la variable objetivo --- por eso no se usa en el modelo operativo.
 
-Como comprobación adicional, se investigó por qué el número de personas implicadas aparece con una relación no monótona con la gravedad: los accidentes con una sola persona presentan la tasa de gravedad más baja (8,8\,\%), los de dos personas la más alta (10,7\,\%), y los de tres o más una tasa intermedia (9,0\,\%), diferencia confirmada como estadísticamente significativa (test de Mann-Whitney y chi-cuadrado, $p<0{,}001$ en ambos). Cruzando esta variable con el tipo de accidente se identifica la causa: es un \textbf{efecto de composición}, no una relación causal directa entre número de implicados y gravedad. El grupo de ``una persona'' está dominado por caídas de un único vehículo (motocicleta, bicicleta, ciclomotor), con una gravedad moderada (entre el 6,9\,\% y el 9,1\,\%). El grupo de ``dos personas'' concentra, además de la colisión doble, la configuración más habitual del atropello (un peatón y un vehículo), con una gravedad mucho más alta (19,7\,\%) que arrastra la media del grupo hacia arriba. El grupo de ``tres o más'' se explica en gran parte por la colisión múltiple, que aun involucrando a más personas tiene una gravedad baja (5,3\,\%) y diluye el peso de los atropellos de tres o más implicados (27,8\,\%, el valor más alto de toda la tabla cruzada). En definitiva, el número de personas implicadas no aumenta ni reduce el riesgo por sí mismo: lo que cambia entre grupos es la mezcla de tipos de accidente que los compone, coherente con que el tipo de accidente ya es, de toda la tabla~\ref{tab:cramer}, la tercera variable con mayor asociación individual con la gravedad.
+¿Por qué el número de personas implicadas no tiene una relación monótona con la gravedad? Una persona: 8,8\,\%; dos personas: 10,7\,\% (la más alta); tres o más: 9,0\,\% --- diferencia significativa (Mann-Whitney y chi-cuadrado, $p<0{,}001$; código en el Anexo~\ref{app:interpretabilidad}). Es un \textbf{efecto de composición}, no una relación causal: cada grupo está dominado por un tipo de accidente distinto.
 
-Figura~\ref{fig:beeswarm} muestra, para las variables de la tabla~\ref{tab:shap}, cómo se distribuye su contribución en función de si la variable toma un valor alto (rojo) o bajo (azul) en cada accidente de la muestra.
+\begin{itemize}[nosep]
+\item \textbf{Una persona:} caídas de un único vehículo (moto, bici, ciclomotor) --- gravedad moderada (6,9--9,1\,\%).
+\item \textbf{Dos personas:} colisión doble y, sobre todo, la configuración habitual del atropello (peatón + vehículo) --- gravedad mucho más alta (19,7\,\%), que arrastra la media del grupo.
+\item \textbf{Tres o más:} dominado por la colisión múltiple, con gravedad baja (5,3\,\%) pese a más implicados, que diluye los atropellos de 3+ personas (27,8\,\%, el valor más alto de toda la tabla).
+\end{itemize}
+
+El número de personas no aumenta ni reduce el riesgo por sí mismo: lo que cambia es la mezcla de tipos de accidente que compone cada grupo --- coherente con que tipo de accidente ya es, en la tabla~\ref{tab:cramer}, la tercera variable con mayor asociación individual.
+
+La Figura~\ref{fig:beeswarm} muestra, para las variables de la tabla~\ref{tab:shap}, cómo se distribuye su contribución en función de si la variable toma un valor alto (rojo) o bajo (azul) en cada accidente de la muestra.
 
 \begin{figure}[h]
 \centering
@@ -362,9 +472,9 @@ Figura~\ref{fig:beeswarm} muestra, para las variables de la tabla~\ref{tab:shap}
 
 \subsection{Focalización geográfica, temporal y demográfica}
 
-Para las tres dimensiones de focalización planteadas como objetivo del trabajo se obtuvieron los siguientes resultados.
+Para las tres dimensiones de focalización planteadas como objetivo se obtuvieron los siguientes resultados.
 
-\textbf{Geográfica.} La contribución media de cada distrito al riesgo predicho no sigue el mismo orden que su tasa histórica de gravedad bruta (tabla~\ref{tab:distritos}). Salamanca, Chamartín y Moncloa-Aravaca son los distritos que más empujan la predicción hacia una mayor gravedad, pese a tener una tasa histórica moderada (en torno al 9\,\%); mientras que Vicálvaro, Puente de Vallecas y San Blas, con una tasa histórica más alta (entre el 11\,\% y el 12\,\%), quedan con una contribución media negativa. La razón es que el modelo ya explica buena parte del riesgo bruto de estos últimos a través de otras variables --- tipo de accidente, tipo de vehículo--- de modo que lo que queda como contribución \emph{incremental} propia del distrito, una vez descontado lo que ya explican esas otras variables, es menor. Para focalizar campañas por el riesgo que el modelo no atribuye ya a otro factor, los distritos prioritarios serían por tanto Salamanca, Chamartín y Moncloa-Aravaca, no los de mayor tasa bruta --- si bien el tamaño de muestra por distrito en el conjunto de prueba (entre 33 y 168 accidentes) es limitado, y esta priorización debe leerse como orientativa y no como un ranking definitivo.
+\textbf{Geográfica.} La contribución media de cada distrito al riesgo predicho no sigue el mismo orden que su tasa histórica bruta (compárese con la figura~\ref{fig:tasa_distrito}): Salamanca, Chamartín y Moncloa-Aravaca empujan más la predicción hacia mayor gravedad pese a una tasa moderada (~9\,\%), mientras que Vicálvaro, Puente de Vallecas y San Blas, con tasa más alta (11--12\,\%), quedan con contribución negativa (tabla~\ref{tab:distritos}). El motivo: el modelo ya explica buena parte del riesgo bruto de estos últimos vía otras variables (tipo de accidente, tipo de vehículo), así que su contribución \emph{incremental} --- una vez descontado lo demás--- es menor. Para focalizar por el riesgo que el modelo no atribuye ya a otro factor, los distritos prioritarios son los primeros, no los de mayor tasa bruta --- aunque el tamaño de muestra por distrito (33--168 accidentes) es limitado, y esta priorización es orientativa.
 
 \begin{table}[h]
 \centering
@@ -386,17 +496,37 @@ Vicálvaro & $-0{,}090$ & 11,7\,\% & 40 \\
 \label{tab:distritos}
 \end{table}
 
-\textbf{Temporal.} La franja horaria de madrugada, entre las 0 y las 7 de la mañana, con un pico en torno a las 6, es la que más empuja la predicción hacia una mayor gravedad; a partir de las 9 y hasta media tarde el efecto es negativo, y vuelve a subir progresivamente desde las 21 horas. Esta lectura desde el modelo coincide con el patrón ya observado de forma puramente descriptiva en el análisis exploratorio (mayor gravedad relativa en horario nocturno), lo que refuerza la fiabilidad del hallazgo al confirmarse por dos vías independientes. Sugiere concentrar recursos de respuesta rápida y campañas de concienciación --- velocidad, alcohol, fatiga--- en el tramo nocturno.
+\textbf{Temporal.} La madrugada (0--7h, pico en torno a las 6) es la franja que más empuja hacia mayor gravedad; de 9h a media tarde el efecto es negativo, y vuelve a subir desde las 21h. Coincide con el patrón ya visto en el EDA de forma puramente descriptiva --- confirmado por dos vías independientes--- y sugiere concentrar controles y campañas (velocidad, alcohol, fatiga) en el tramo nocturno.
 
-\textbf{Demográfica.} La presencia de una persona en edad de riesgo (menor de edad o mayor de 65 años) muestra una separación limpia y consistente: cuando está presente, la contribución al riesgo es sistemáticamente positiva (típicamente entre 0,02 y 0,16 en escala logarítmica); cuando no lo está, es ligeramente negativa y con mucha menos dispersión. Es un efecto más modesto en magnitud que el de motocicletas o peatones, pero consistente en dirección, lo que apoya mantener campañas dirigidas a menores y mayores como una línea de prevención independiente del tipo de vehículo implicado.
+\textbf{Demográfica.} La presencia de un menor o un mayor de 65 años muestra una contribución sistemáticamente positiva al riesgo (0,02--0,16 en log-odds) cuando está presente, y ligeramente negativa cuando no. Es un efecto más modesto que el de motos o peatones, pero consistente en dirección --- apoya campañas dirigidas a estos colectivos, independientes del tipo de vehículo.
 
-En conjunto, las variables con mayor poder predictivo --- moto, peatón, tipo de atropello--- no son accionables directamente por una campaña de prevención, ya que no se puede ``prohibir'' que haya motoristas o peatones en la vía; pero sí informan \textbf{dónde y cuándo} reforzar la protección de esos usuarios vulnerables. Las combinaciones de distrito, franja horaria y perfil de edad identificadas arriba son la traducción operativa de ese hallazgo para el diseño de campañas dirigidas, en lugar de campañas genéricas sin focalización basada en datos.
+En conjunto, moto, peatón y atropello no son ``prohibibles'' por una campaña, pero informan \textbf{dónde y cuándo} reforzar la protección de esos usuarios vulnerables: distrito, franja horaria y edad son la traducción operativa de estos hallazgos para campañas dirigidas, en vez de genéricas.
 
 % =============================================================================
 \section{Productivización}
 % =============================================================================
 
-Un modelo que solo vive en un notebook no resuelve el problema real planteado en la introducción: apoyar una decisión operativa exige que el modelo esté disponible en el momento en que esa decisión se toma, no solo en un análisis retrospectivo. Por ello, más allá del propio análisis, el trabajo incluye un pipeline reutilizable y una aplicación funcional, en línea con el objetivo de que el modelo de triaje pueda integrarse como apoyo real a la decisión operativa.
+Apoyar una decisión operativa exige que el modelo esté disponible en el momento en que esa decisión se toma, no solo en un análisis retrospectivo. Por ello, más allá del propio análisis, el trabajo incluye un pipeline reutilizable y una aplicación funcional, en línea con el objetivo de que el modelo de triaje pueda integrarse como apoyo real a la decisión operativa.
+
+\subsection{Herramientas, control de versiones y estructura del repositorio}
+
+Todo el proyecto se ha desarrollado en Visual Studio Code, con la extensión de Jupyter para trabajar los notebooks y control de versiones integrado con Git. El código completo --- notebooks, código fuente, configuración, aplicación web, scripts de productivización, memoria e informe de prevención--- está versionado y alojado públicamente en GitHub, en \url{https://github.com/meritxellabellan29/TFM-accidentes-trafico}, lo que permite consultar el historial de cambios, revisar el código fuente completo y clonar el repositorio para reproducir el proyecto de extremo a extremo.
+
+El repositorio sigue una arquitectura por capas, separando claramente el análisis exploratorio del código reutilizable y de los artefactos de despliegue:
+
+\begin{itemize}[itemsep=2pt]
+\item \texttt{config/}: parámetros del proyecto en ficheros YAML (rutas, columnas requeridas, hiperparámetros de partición, artefactos de producción), leídos por \texttt{src/config.py} en lugar de estar escritos directamente en el código.
+\item \texttt{data/}: datos originales (\texttt{raw/}) y datos ya limpios, transformados y con las matrices de variables (\texttt{processed/}, \texttt{processed/features/}).
+\item \texttt{notebooks/}: los seis notebooks numerados del análisis (01\_EDA a 06\_Prediccion\_Nuevos\_Datos), que documentan el razonamiento paso a paso pero importan toda la lógica reutilizable desde \texttt{src/}, sin duplicarla.
+\item \texttt{src/}: el código fuente reutilizable --- \texttt{pipelines/} (limpieza, preprocesado, feature engineering y la clase \texttt{PipelineAccidentes} de producción), \texttt{models/} (entrenamiento y evaluación) y \texttt{utils/} (gráficos e interpretabilidad).
+\item \texttt{models/}: los modelos y el pipeline ya ajustados y serializados (\texttt{.joblib}), listos para cargarse sin reentrenar.
+\item \texttt{scripts/}: puntos de entrada de producción independientes del notebook (predicción por línea de comandos, demo local, generación del informe de prevención, sincronización con la webapp).
+\item \texttt{webapp/}: la aplicación Flask de triaje operativo, desplegable de forma independiente.
+\item \texttt{reports/} y \texttt{figures/}: los artefactos generados --- el informe de prevención y todas las figuras del análisis y la memoria.
+\item \texttt{memoria/}: este documento, en \LaTeX.
+\end{itemize}
+
+Esta separación es lo que permite que el mismo código se reutilice sin duplicación entre el análisis exploratorio, la aplicación web, el script de predicción por lotes y el informe de prevención, y es también lo que hace posible la reproducibilidad descrita en la Sección~\ref{sec:reproducibilidad}: cualquier persona con acceso al repositorio puede clonarlo, instalar las dependencias de \texttt{requirements.txt} y ejecutar cualquiera de esas piezas de forma independiente.
 
 \subsection{Arquitectura del pipeline}
 
@@ -404,7 +534,7 @@ Toda la limpieza, el preprocesado y la ingeniería de variables se encapsulan en
 
 \subsection{La aplicación de triaje operativo}
 
-La pieza central de la productivización es una \textbf{aplicación web}, con un formulario y una API de tipo REST, construida específicamente para el caso de uso de la Pregunta 1: apoyar a los servicios de emergencia en el momento del aviso. La persona que atiende la llamada al 112 introduce en el formulario los datos que ya conoce en ese instante (distrito, fecha y hora, tipo de vía, tipo de accidente, condiciones meteorológicas y del firme, y si se sabe que hay una moto o una bicicleta implicada) y la aplicación devuelve al momento la probabilidad de gravedad estimada por el modelo operativo (figura~\ref{fig:webapp}), sin exponer en ningún momento detalles técnicos del modelo. Nótese que es siempre el \textbf{modelo operativo} el que responde aquí --- nunca el explicativo--- precisamente porque es el único de los dos entrenado exclusivamente con información disponible en el momento del aviso, tal y como exige el caso de uso real.
+La pieza central de la productivización es una \textbf{aplicación web}, con un formulario y una API de tipo REST, construida específicamente para el caso de uso de la Pregunta 1: apoyar a los servicios de emergencia en el momento del aviso. La persona que atiende la llamada al 112 introduce en el formulario los datos que ya conoce en ese instante (distrito, fecha y hora, tipo de vía, tipo de accidente, condiciones meteorológicas y del firme, y si se sabe que hay una moto o una bicicleta implicada) y la aplicación devuelve al momento la probabilidad de gravedad estimada por el modelo operativo (figura~\ref{fig:webapp}), sin exponer en ningún momento detalles técnicos del modelo. Nótese que es siempre el \textbf{modelo operativo} el que responde aquí --- nunca el explicativo--- precisamente porque es el único de los dos entrenado exclusivamente con información disponible en el momento del aviso, tal y como exige el caso de uso real. La función que traduce estos datos del formulario en la probabilidad devuelta se reproduce en el Anexo~\ref{app:predecir_individual}.
 
 \begin{figure}[h]
 \centering
@@ -413,21 +543,27 @@ La pieza central de la productivización es una \textbf{aplicación web}, con un
 \label{fig:webapp}
 \end{figure}
 
-Sobre esa probabilidad, la aplicación añade una capa ligera de reglas de negocio que traduce el porcentaje --- junto con el tipo de accidente y si hay una moto o una bicicleta implicada--- en una sugerencia de qué recursos reforzar: Policía Municipal siempre, para la regulación del tráfico y el atestado; SAMUR con carácter reforzado si la probabilidad de gravedad es alta o si hay un usuario vulnerable de la vía implicado; y Bomberos, ante una posible necesidad de excarcelación, en vuelcos o colisiones múltiples con probabilidad alta. Esta capa es intencionadamente de reglas y no una salida del modelo, porque el histórico de accidentes no registra qué recursos se enviaron a cada uno, así que no hay con qué entrenar esa predicción; el 112 no aparece como una alternativa más en la lista porque es el canal de coordinación a través del cual se despachan los demás, no un recurso que se decida activar o no.
+Sobre esa probabilidad, la aplicación añade una capa ligera de reglas de negocio que traduce el porcentaje --- junto con el tipo de accidente y si hay una moto o una bicicleta implicada--- en una sugerencia de qué recursos reforzar: Policía Municipal siempre, para la regulación del tráfico y el atestado; SAMUR con carácter reforzado si la probabilidad de gravedad es alta o si hay un usuario vulnerable de la vía implicado; y Bomberos, ante una posible necesidad de excarcelación, en vuelcos o colisiones múltiples con probabilidad alta. Esta capa es intencionadamente de reglas y no una salida del modelo, porque el histórico de accidentes no registra qué recursos se enviaron a cada uno, así que no hay con qué entrenar esa predicción; el 112 no aparece como una alternativa más en la lista porque es el canal de coordinación a través del cual se despachan los demás, no un recurso que se decida activar o no. Esta función se reproduce en el Anexo~\ref{app:recursos}.
 
 Sobre la misma clase de pipeline, y sin duplicar ninguna lógica de negocio entre ellas, se construyeron además otras dos formas de uso: un \textbf{script de línea de comandos} que procesa un fichero completo de accidentes nuevos y devuelve la probabilidad de gravedad de cada uno --- junto con el área bajo la curva ROC resultante, si la gravedad real ya es conocida--- útil para revalidar el modelo sobre datos futuros del mismo formato sin necesidad de abrir ningún notebook; y una \textbf{aplicación local} equivalente a la web, orientada a pruebas rápidas sin necesidad de desplegar nada.
 
-Las opciones que se ofrecen en el formulario --- lista de distritos, de tipos de vía y de tipos de accidente--- se derivan dinámicamente del propio pipeline ya ajustado, no están escritas a mano: si el modelo se reentrena en el futuro con más categorías o con distritos nuevos, el formulario se actualiza solo, sin tener que tocar el código de la aplicación.
+Las opciones que se ofrecen en el formulario --- lista de distritos, de tipos de vía y de tipos de accidente--- se derivan dinámicamente del propio pipeline ya ajustado: si el modelo se reentrena en el futuro con más categorías o con distritos nuevos, el formulario se actualiza solo, sin tener que tocar el código de la aplicación.
 
 \subsection{Informe de apoyo a la prevención vial}
 
-Si la aplicación web productiviza el modelo operativo de la Pregunta 1, el análisis de interpretabilidad de la Pregunta 2 se productiviza en un \textbf{informe en PDF} dirigido a un público no técnico --- las autoridades responsables de las campañas de seguridad vial--- generado automáticamente por \texttt{scripts/generar\_informe\_prevencion.py} a partir de los mismos datos y modelos ya entrenados, sin copiar ningún número a mano. El informe traduce los hallazgos de la Sección~6 a un formato visual y esquemático de una página por bloque --- factores de mayor riesgo (peatones, motocicletas, menores y mayores de 65 años), franja horaria de mayor gravedad y focalización geográfica--- con una cifra por cada hallazgo y una recomendación concreta asociada. Para que las cifras sean sólidas ante un público sin formación técnica, el informe prioriza tasas de gravedad observadas directamente en los datos por encima de las probabilidades del propio modelo explicativo, que --- al entrenarse con ponderación de clases--- no son directamente comparables con la tasa real sin la nota de calibración ya explicada en la Sección~6.1; la única sección que sí recurre al modelo es la de distritos, porque ahí el hallazgo relevante (qué distritos concentran más riesgo del que su tipo de vía y meteorología explicarían) solo existe una vez controladas esas otras variables, y una tasa bruta por distrito no lo mostraría --- de hecho, como señala el propio informe, apunta en la dirección contraria.
+Si la aplicación web productiviza el modelo operativo (Pregunta 1), el análisis de interpretabilidad (Pregunta 2) se productiviza en un \textbf{informe en PDF} para un público no técnico --- las autoridades de seguridad vial--- generado automáticamente por \texttt{scripts/generar\_informe\_prevencion.py} sin copiar ningún número a mano. Traduce los hallazgos de la Sección~5 a un formato visual, una página por bloque (factores de riesgo, franja horaria, focalización geográfica), con una cifra y una recomendación por hallazgo. Para que las cifras sean sólidas ante un público sin formación técnica, prioriza tasas observadas directamente en los datos sobre las probabilidades del modelo explicativo (que, al usar ponderación de clases, no son directamente comparables con la tasa real); la única excepción es la sección de distritos, donde el hallazgo --- qué distritos concentran más riesgo del que su contexto explicaría--- solo existe controlando esas otras variables.
 
 \subsection{Reproducibilidad y escalabilidad a otros entornos}
+\label{sec:reproducibilidad}
 
-El diseño del pipeline no se limita a resolver el caso concreto de Madrid: está pensado para que el mismo código pueda aplicarse, con cambios mínimos, a datos de accidentalidad de otras ciudades o comunidades autónomas que publiquen su información en un formato equivalente (nivel persona, con lesividad, lugar, momento y condiciones del accidente) --- un escenario realista, ya que varios ayuntamientos y comunidades españolas publican datos abiertos de accidentalidad con una estructura similar. Para que ese escenario sea viable en la práctica, y no solo en teoría, se incorporaron dos salvaguardas explícitas. La primera es una validación de esquema, que comprueba al cargar los datos que están presentes todas las columnas necesarias y falla de inmediato con un mensaje explícito, en lugar de un error críptico varias funciones más abajo, si el fichero nuevo tiene alguna columna renombrada o ausente. La segunda es un diagnóstico que revisa, antes de normalizar los valores ausentes, si aparecen valores de texto que parezcan representar información no asignada (por ejemplo, una convención de texto distinta a la ya contemplada) pero que el sistema todavía no reconoce como tal --- para que ese caso se detecte y se decida explícitamente, en lugar de dejarlo pasar en silencio como si fuera una categoría más, sesgando el resultado sin ningún aviso.
+El pipeline no se limita al caso de Madrid: está pensado para aplicarse, con cambios mínimos, a datos de accidentalidad de otras ciudades que publiquen un formato equivalente (nivel persona, con lesividad, lugar, momento y condiciones) --- un escenario realista, ya que varios ayuntamientos y comunidades publican datos abiertos con estructura similar. Para que sea viable en la práctica se incorporaron dos salvaguardas (Anexo~\ref{app:validacion_esquema}):
 
-Además, todas las rutas de entrada y salida, y los parámetros de las particiones (año de corte, tamaño del conjunto de prueba, grado de suavizado del agregado de distrito), se leen de ficheros de configuración externos y no están escritos directamente en el código, de modo que el mismo pipeline puede volver a ejecutarse sobre un fichero de datos distinto, o con parámetros distintos, sin modificar nada del código fuente. Trasladarlo a otra ciudad exigiría, eso sí, algunas piezas específicas de Madrid --- las categorías de distrito y la clasificación de tipo de vía por palabras clave--- que tendrían que adaptarse al nuevo territorio; el resto del pipeline (limpieza, target encoding, codificación cíclica, detección de la trampa de variable ficticia, entrenamiento y validación) es directamente reutilizable sin cambios.
+\begin{itemize}[nosep]
+\item \textbf{Validación de esquema:} comprueba al cargar los datos que están todas las columnas necesarias, y falla de inmediato con un mensaje explícito --- en vez de un error críptico varias funciones más abajo--- si el fichero nuevo tiene alguna columna renombrada o ausente.
+\item \textbf{Diagnóstico de valores ``sin dato'':} revisa si aparecen convenciones de texto no reconocidas (antes de normalizar nulos) para decidirlo explícitamente, en vez de dejarlas pasar en silencio como una categoría más y sesgar el resultado sin aviso.
+\end{itemize}
+
+Además, todas las rutas y parámetros de partición (año de corte, tamaño de prueba, suavizado del agregado de distrito) se leen de ficheros de configuración externos, no del código, así que el pipeline puede reejecutarse sobre otro fichero o con otros parámetros sin tocar el código fuente. Trasladarlo a otra ciudad exigiría adaptar solo las piezas específicas de Madrid (categorías de distrito, clasificación de tipo de vía por palabras clave); el resto (limpieza, target encoding, codificación cíclica, detección de variable ficticia, entrenamiento y validación) es directamente reutilizable.
 
 % =============================================================================
 \section{Conclusiones y trabajo futuro}
@@ -435,19 +571,54 @@ Además, todas las rutas de entrada y salida, y los parámetros de las particion
 
 \subsection{Conclusiones}
 
-El trabajo responde a sus dos preguntas de investigación con resultados concretos. Para el triaje operativo, un modelo XGBoost entrenado únicamente con información disponible en el momento del aviso alcanza un área bajo la curva ROC de 0,708 sobre un año completo no visto durante el entrenamiento, con un comportamiento estable a lo largo de cinco años de validación. Conviene ser honesto sobre lo que significa esa cifra: como referencia orientativa, 0,5 equivale a azar puro y solo por encima de 0,8--0,9 se considera un modelo fuertemente discriminativo, así que 0,708 se sitúa en el extremo inferior de lo que suele calificarse como discriminación aceptable --- claramente mejor que no usar ningún modelo, pero lejos de ser un predictor determinante por sí solo. El resultado es coherente con la naturaleza del problema: se le pide anticipar la gravedad usando solo lo que se conoce en el instante del aviso (ubicación, momento, tipo de vía y de accidente, condiciones meteorológicas y del firme), sin ningún dato sobre la dinámica real del impacto --- velocidad, mecanismo exacto de la colisión, factores humanos--- que es probablemente donde reside buena parte de la señal que el modelo no puede ver. La comparación con el modelo explicativo (Sección~5.5), que sí incorpora el perfil de las personas implicadas y solo mejora hasta 0,724, refuerza esta lectura: incluso con más información, el techo de rendimiento alcanzable con las variables disponibles en este dataset es moderado, no una limitación específica del modelo operativo. Por ello el encuadre correcto, y el que efectivamente adopta la aplicación de demostración, es el de una señal adicional de apoyo a la decisión, nunca un sustituto del juicio profesional de los servicios de emergencia. Para la prevención vial, el análisis de interpretabilidad --- contrastado con dos modelos de naturaleza distinta--- identifica la presencia de motocicletas y peatones como los factores de mayor peso individual, y traduce el resto de variables en recomendaciones concretas de focalización: los distritos de Salamanca, Chamartín y Moncloa-Aravaca por su contribución incremental al riesgo más allá de lo ya explicado por otras variables, la franja de madrugada por su contribución sistemáticamente más alta, y los colectivos de menores y mayores de 65 años como línea de prevención independiente del tipo de vehículo.
+El trabajo responde a sus dos preguntas con resultados concretos.
 
-La diferencia de rendimiento entre ambos modelos --- en torno a 1,6 puntos de área bajo la curva ROC--- confirma que restringirse a la información disponible en el momento del aviso tiene un coste real pero moderado, y que el valor del perfil de las personas implicadas está más en la interpretación para prevención que en la mejora directa de la predicción. Ambos resultados, además, se obtienen con un pipeline que se ha llevado explícitamente más allá del notebook, con una aplicación funcional de demostración y salvaguardas de reproducibilidad frente a futuras publicaciones de datos del mismo formato.
+\textbf{Triaje operativo (Pregunta 1).} XGBoost, entrenado solo con información del momento del aviso, alcanza un área bajo la curva ROC de 0,708 sobre un año no visto, estable en cinco años de validación. En términos honestos: 0,5 es azar puro y solo por encima de 0,8--0,9 se considera fuertemente discriminativo, así que 0,708 queda en el extremo inferior de lo ``aceptable'' --- mejor que no usar ningún modelo, pero lejos de un predictor determinante. Es coherente con el problema: falta toda la dinámica real del impacto (velocidad, mecanismo, factores humanos) que probablemente concentra la señal que el modelo no puede ver. El modelo explicativo, con más variables, solo mejora hasta 0,724 (Sección~4.5) --- confirma que el techo de rendimiento es del propio dataset, no una limitación específica del modelo operativo. Por eso el encuadre correcto, el que adopta la aplicación de demostración, es el de una señal de apoyo, nunca un sustituto del juicio profesional.
+
+\textbf{Prevención vial (Pregunta 2).} El análisis de interpretabilidad --- contrastado con dos modelos distintos--- identifica motocicletas y peatones como los factores de mayor peso individual, y traduce el resto en recomendaciones de focalización:
+
+\begin{itemize}[nosep]
+\item \textbf{Dónde:} Salamanca, Chamartín y Moncloa-Aravaca, por su contribución incremental al riesgo más allá de lo ya explicado por otras variables.
+\item \textbf{Cuándo:} la franja de madrugada, por su contribución sistemáticamente más alta.
+\item \textbf{Quién:} menores y mayores de 65 años, como línea de prevención independiente del tipo de vehículo.
+\end{itemize}
+
+La diferencia de rendimiento entre ambos modelos (~1,6 puntos de AUC-ROC) confirma que restringirse a la información del aviso tiene un coste real pero moderado, y que el perfil de las personas vale más para interpretar que para predecir. Ambos resultados se obtienen con un pipeline llevado más allá del notebook: una aplicación funcional de demostración y salvaguardas de reproducibilidad frente a futuras publicaciones de datos del mismo formato.
 
 \subsection{Limitaciones}
 
-El trabajo reconoce varias limitaciones de forma explícita. La clasificación del tipo de vía a partir de la descripción libre del lugar, mediante reglas de texto, es una primera aproximación razonable pero mejorable --- geocodificar esa descripción permitiría cruzarla con capas reales de velocidad de vía. La validación de ventana expansiva, aunque confirma que el año de prueba es representativo, no reajusta en cada iteración las variables ya aprendidas del histórico (codificación de distrito, categorías de vía), por simplicidad, lo que podría favorecer ligeramente a los primeros años de validación. La deriva temporal detectada en la tasa de gravedad implica que, en un despliegue real, el modelo debería recalibrarse periódicamente. El tamaño de muestra por distrito en el conjunto de prueba es limitado, por lo que la priorización geográfica de las recomendaciones de prevención debe leerse como orientativa.
+La más relevante de cara a un uso operativo real es la baja precisión al umbral de 0,5: solo el 13,1\,\% de las alertas de gravedad alta son realmente graves (matriz de confusión, Sección~4.4). No es un defecto aislado, sino tres factores estructurales que conviene distinguir, porque cada uno exige una respuesta distinta:
 
-Una limitación adicional, de naturaleza distinta a las anteriores, es la propia antigüedad del periodo de datos (2012--2018). El parque de vehículos de Madrid ha cambiado de forma notable desde entonces, en particular con la aparición y expansión del patinete eléctrico como medio de transporte urbano, prácticamente inexistente en el periodo estudiado. El modelo actual no puede, por tanto, capturar el perfil de riesgo de este colectivo, que hoy en día es ya relevante para la seguridad vial en la ciudad; cualquier actualización futura del modelo con datos más recientes debería incorporar explícitamente el patinete eléctrico --- y otros medios de movilidad que puedan surgir--- como categoría propia de tipo de vehículo, en lugar de asumir que la taxonomía original sigue siendo representativa del tráfico actual.
+\begin{itemize}[nosep]
+\item \textbf{Desequilibrio de clases} (solo 9,6\,\% graves): una tasa moderada de falsos positivos entre los muchos accidentes leves (41,4\,\%) supera en número absoluto a los aciertos --- visible en el modesto AUC-PR (0,174) frente al AUC-ROC (0,708) de la tabla~\ref{tab:comparacion_operativo}. La brecha no es casual: el ROC mide falsos positivos \emph{sobre el total de negativos} (enorme, así que apenas se mueve); precisión-recall mide precisión \emph{sobre el total de positivos predichos} --- la pregunta que le importa a quien recibe la alerta.
+\item \textbf{Ponderación de clases} en el entrenamiento --- necesaria para que el modelo no colapse prediciendo siempre ``no grave''--- desplaza el umbral efectivo y prioriza sensibilidad sobre precisión: razonable para un triaje (un falso negativo cuesta más que una alerta de más), pero hay que comunicarlo con claridad a quien use la herramienta.
+\item \textbf{Techo de discriminación del modelo} (AUC-ROC 0,708): las distribuciones de graves y no graves se solapan bastante, así que cualquier umbral que capture la mayoría de los graves reales capturará también muchos que no lo son.
+\end{itemize}
+
+En un despliegue real, el umbral debería recalibrarse según el coste relativo de cada tipo de error, no mantenerse en 0,5.
+
+Otras limitaciones reconocidas:
+
+\begin{itemize}[nosep]
+\item La clasificación del tipo de vía por reglas de texto es una aproximación razonable pero mejorable --- geocodificar permitiría cruzar con velocidad de vía real.
+\item La validación de ventana expansiva no reajusta en cada iteración las variables aprendidas del histórico, por simplicidad, lo que podría favorecer ligeramente a los primeros años.
+\item La deriva temporal en la tasa de gravedad implica que un despliegue real necesitaría recalibración periódica.
+\item El tamaño de muestra por distrito en test es limitado, así que la priorización geográfica es orientativa.
+\item El periodo de datos (2012--2018) no incluye el patinete eléctrico, hoy ya relevante para la seguridad vial de la ciudad; una actualización futura debería incorporarlo como categoría propia de vehículo.
+\end{itemize}
 
 \subsection{Trabajo futuro}
 
-Como continuación natural de este trabajo se plantean: geocodificar la descripción del lugar del accidente para incorporar variables de velocidad de vía real; explorar una validación de ventana expansiva que reajuste todas las transformaciones en cada iteración, sin ninguna dependencia del histórico completo; incorporar una estrategia explícita de recalibración periódica en el pipeline de producción; actualizar el modelo con datos más recientes que incorporen los nuevos medios de movilidad urbana (patinete eléctrico y similares); y extender la aplicación de demostración con un panel de seguimiento para las instituciones responsables de las campañas de prevención vial, que muestre la evolución de las recomendaciones de focalización a medida que se disponga de nuevos datos.
+Como continuación natural de este trabajo se plantean:
+
+\begin{itemize}[nosep]
+\item Calibrar el umbral de decisión según el coste relativo de un falso negativo frente a una falsa alarma, en vez de mantener 0,5 por defecto.
+\item Geocodificar la descripción del lugar del accidente para incorporar velocidad de vía real.
+\item Explorar una validación de ventana expansiva que reajuste todas las transformaciones en cada iteración, sin dependencia del histórico completo.
+\item Incorporar una estrategia explícita de recalibración periódica en el pipeline de producción.
+\item Actualizar el modelo con datos más recientes que incluyan los nuevos medios de movilidad urbana (patinete eléctrico y similares).
+\item Extender la aplicación de demostración con un panel de seguimiento para las instituciones de prevención vial, que muestre la evolución de las recomendaciones a medida que haya nuevos datos.
+\end{itemize}
 
 % =============================================================================
 \section*{Bibliografía}
@@ -462,5 +633,689 @@ Como continuación natural de este trabajo se plantean: geocodificar la descripc
 \item Hastie, T., Tibshirani, R., y Friedman, J. (2009). \emph{The Elements of Statistical Learning} (2.ª ed.). Springer.
 \item Lilliefors, H. W. (1967). \emph{On the Kolmogorov-Smirnov Test for Normality with Mean and Variance Unknown}. Journal of the American Statistical Association, 62(318), 399--402.
 \end{enumerate}
+
+\newpage
+\appendix
+\section{Código representativo del proyecto}
+
+Este anexo no cuenta para el límite de 20 páginas del cuerpo principal. Recoge, con su docstring, los fragmentos de código reales del proyecto que sostienen cada afirmación cuantitativa o decisión metodológica del cuerpo del documento --- ni la lógica ni los nombres de variables o funciones se han alterado--- para que puedan consultarse junto a la explicación a la que acompañan sin necesidad de abrir el repositorio. El código completo, con el resto de funciones, los seis notebooks y la aplicación web, está disponible en \url{https://github.com/meritxellabellan29/TFM-accidentes-trafico} (Sección~6.1; repositorio público, sin necesidad de permisos para consultarlo). Algunos fragmentos omiten, marcándolo explícitamente con un comentario, partes repetitivas del docstring original (por ejemplo, la documentación exhaustiva de cada parámetro) que no aportan a la comprensión del razonamiento; por legibilidad tipográfica dentro del bloque de código, además, se han retirado las tildes de los comentarios y docstrings --- el código real en el repositorio conserva la ortografía completa.
+
+\subsection{Asociación estadística con corrección por comparaciones múltiples (\texttt{01\_EDA.ipynb})}
+\label{app:cramer}
+
+La función que calcula la V de Cramér de la tabla~\ref{tab:cramer} (Sección~2.8), junto con la corrección de Bonferroni aplicada antes de interpretar cualquier test de independencia chi-cuadrado como significativo.
+
+\begin{lstlisting}[caption={Cálculo de la V de Cramér y corrección de Bonferroni para comparaciones múltiples.}]
+from scipy.stats import chi2_contingency
+
+# Correccion de Bonferroni: dividir el umbral de significancia habitual
+# (0.05) entre el numero de variables testeadas, para no declarar
+# "significativo" algo que solo lo parece por puro azar de probar muchas
+# variables a la vez
+alpha_corregido = 0.05 / len(vars_categoricas)
+
+def cramers_v(x, y):
+    """V de Cramer, corregida por sesgo (Bergsma 2013): mide la fuerza
+    de la asociacion entre dos variables categoricas, entre 0 (ninguna)
+    y 1 (perfecta) -- a diferencia del chi-cuadrado bruto, no depende
+    del tamano de la muestra, lo que permite comparar variables con
+    distinto numero de categorias entre si."""
+    confusion_matrix = pd.crosstab(x, y)
+    chi2, _, _, _ = chi2_contingency(confusion_matrix)
+    n = confusion_matrix.sum().sum()
+    r, k = confusion_matrix.shape
+    phi2 = chi2 / n
+    phi2corr = max(0, phi2 - ((k - 1) * (r - 1)) / (n - 1))
+    rcorr = r - ((r - 1) ** 2) / (n - 1)
+    kcorr = k - ((k - 1) ** 2) / (n - 1)
+    denom = min((kcorr - 1), (rcorr - 1))
+    if denom <= 0:
+        return 0.0
+    return np.sqrt(phi2corr / denom)
+
+# Cada variable se testea en su nivel real de variacion (ver Seccion 2.7):
+# las de persona contra el dataframe a nivel persona, las de accidente
+# contra el dataframe ya agregado a nivel accidente -- para no
+# pseudo-replicar cada accidente una vez por implicado
+resultados = []
+for var in vars_persona:
+    mask = df_sin_na[var].notna() & df_sin_na['LESIVIDAD'].notna()
+    v_gra = cramers_v(df_sin_na.loc[mask, var], df_sin_na.loc[mask, 'GRAVE'].astype(str))
+    resultados.append({'Variable': var, 'Nivel': 'Persona', 'V_Grave': v_gra})
+
+for var in vars_accidente:
+    mask = df_accidentes[var].notna() & df_accidentes['accidente_grave'].notna()
+    v_gra = cramers_v(df_accidentes.loc[mask, var], df_accidentes.loc[mask, 'accidente_grave'].astype(str))
+    resultados.append({'Variable': var, 'Nivel': 'Accidente', 'V_Grave': v_gra})
+
+df_cramer = pd.DataFrame(resultados).sort_values('V_Grave', ascending=False)
+\end{lstlisting}
+
+\subsection{De persona a accidente y clasificación del tipo de vía (\texttt{src/pipelines/preprocesado.py})}
+\label{app:preprocesado}
+
+Las funciones que transforman el dataset de nivel persona a nivel accidente (Sección~3.1): construyen los indicadores de implicación (\texttt{INCLUYE\_*}), verifican que las columnas ``de accidente'' realmente no varían dentro de un mismo accidente antes de asumirlo, y clasifican el tipo de vía a partir del texto libre del lugar.
+
+\begin{lstlisting}[caption={Agregación de persona a accidente, verificación de invariancia y clasificación del tipo de vía por texto.}]
+def agregar_flags_persona(df, df_pers, grupos_riesgo_edad=GRUPOS_RIESGO_EDAD):
+    """Agrega de persona a accidente las variables de persona con mayor
+    asociacion con la gravedad, como flags de implicacion, en vez de
+    perderlas al agregar.
+
+    N_PERSONAS_IMPLICADAS se calcula sobre `df` completo (no sobre
+    `df_pers`), porque de lo contrario infraestimaria el numero real de
+    implicados en cualquier accidente con alguna persona de LESIVIDAD
+    desconocida (~8.9% de los accidentes)."""
+    n_personas_real = df.groupby('Nº PARTE').size().rename('N_PERSONAS_IMPLICADAS')
+
+    agg_flags = df_pers.groupby('Nº PARTE').agg(
+        GRAVE=('GRAVE', 'max'),
+        INCLUYE_PEATON=('TIPO PERSONA', lambda s: (s == 'PEATON').any()),
+        INCLUYE_MOTO=('Tipo Vehiculo', lambda s: s.isin(['MOTOCICLETA', 'CICLOMOTOR']).any()),
+        INCLUYE_BICI=('Tipo Vehiculo', lambda s: (s == 'BICICLETA').any()),
+        INCLUYE_EDAD_RIESGO=('Tramo Edad', lambda s: s.isin(grupos_riesgo_edad).any()),
+    ).reset_index()
+
+    return agg_flags.merge(n_personas_real, on='Nº PARTE', how='left')
+
+
+def verificar_invariancia_por_accidente(df, cols=COLS_ACCIDENTE):
+    """Comprueba que las columnas "de accidente" (fecha, distrito,
+    meteorologia...) no varian dentro de un mismo numero de parte, antes
+    de asumirlo y tomar el primer valor sin mas. Devuelve un dict
+    {columna: numero de accidentes inconsistentes} solo con las columnas
+    que si presentan alguna inconsistencia."""
+    inconsistencias = {
+        c: (df.groupby('Nº PARTE')[c].nunique() > 1).sum()
+        for c in cols if c != 'Nº PARTE'
+    }
+    return {k: v for k, v in inconsistencias.items() if v > 0}
+
+
+def tipo_via(texto):
+    """Clasifica LUGAR ACCIDENTE por tipo de via, usando todo el texto
+    (no solo el primer tramo antes de un posible '-') con un orden de
+    prioridad de mayor a menor velocidad/relevancia esperada. Si el
+    cruce mezcla dos tipos (p. ej. 'CALLE - AUTOVIA'), prevalece el de
+    mayor prioridad -- el orden de los tramos en el texto es alfabetico
+    en ~88% de los casos, no indica cual via es la "principal"."""
+    if pd.isna(texto):
+        return np.nan
+    t = texto.upper()
+    if 'AUTOVIA' in t or 'M-30' in t or 'M-40' in t:
+        return 'AUTOVIA'
+    if 'CARRETERA' in t:
+        return 'CARRETERA'
+    if 'RONDA' in t:
+        return 'RONDA'
+    if 'AVENIDA' in t:
+        return 'AVENIDA'
+    if 'PASEO' in t:
+        return 'PASEO'
+    if 'GLORIETA' in t:
+        return 'GLORIETA'
+    if 'CALLE' in t:
+        return 'CALLE'
+    if 'PLAZA' in t:
+        return 'PLAZA'
+    return 'OTROS'
+
+
+def detectar_cruce(df):
+    """Anade ES_CRUCE: patron 'CALLE 1 - CALLE 2' en LUGAR ACCIDENTE,
+    que marca una interseccion entre dos vias (~46% de los accidentes)."""
+    df = df.copy()
+    df['ES_CRUCE'] = df['LUGAR ACCIDENTE'].str.contains(' - ', na=False).astype(int)
+    return df
+\end{lstlisting}
+
+\subsection{Target encoding suavizado, codificación cíclica y VIF (\texttt{src/pipelines/feature\_engineering.py})}
+\label{app:encoding}
+
+Las funciones que construyen el agregado histórico de distrito (con y sin fuga de información dentro de train), la codificación cíclica de hora y mes, y el cálculo del factor de inflación de la varianza (Sección~3.4-3.5).
+
+\begin{lstlisting}[caption={Target encoding suavizado (con y sin fuga de información), codificación cíclica y VIF.}]
+def smoothed_target_encode(train_df, col, target, m):
+    """Codificacion de una categorica por la media (suavizada) de
+    `target` en ese grupo, ajustada con TODO train. Se usa para el
+    mapeo final que se aplica a test.
+
+    El suavizado (parametro `m`) combina la tasa del grupo con la media
+    global, ponderando por su tamano de muestra: un distrito con pocos
+    accidentes y una tasa extrema por puro azar queda "tirado" hacia la
+    media global, en vez de distorsionar el modelo con una senal poco
+    fiable."""
+    global_mean = train_df[target].mean()
+    agg = train_df.groupby(col)[target].agg(['mean', 'count'])
+    smoothed = (agg['count'] * agg['mean'] + m * global_mean) / (agg['count'] + m)
+    return smoothed, global_mean
+
+
+def smoothed_target_encode_oof(train_df, col, target, m, n_splits=5, random_state=42):
+    """Version out-of-fold para TRAIN: cada fila se codifica con un
+    mapeo aprendido en los folds a los que NO pertenece, para que no
+    contribuya a su propio valor -- si no, cada fila "ve" un poco de su
+    propia etiqueta a traves de la media de su grupo, una fuga de
+    informacion sutil pero real."""
+    from sklearn.model_selection import KFold
+    kf = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+    oof = pd.Series(index=train_df.index, dtype=float)
+    global_mean = train_df[target].mean()
+
+    for idx_fit, idx_hold in kf.split(train_df):
+        fit_fold = train_df.iloc[idx_fit]
+        agg = fit_fold.groupby(col)[target].agg(['mean', 'count'])
+        smoothed_fold = (agg['count'] * agg['mean'] + m * global_mean) / (agg['count'] + m)
+        oof.iloc[idx_hold] = train_df.iloc[idx_hold][col].map(smoothed_fold).fillna(global_mean)
+
+    return oof
+
+
+def codificar_ciclica(df, col, periodo):
+    """Codifica una variable ciclica (p. ej. HORA con periodo 24, MES
+    con periodo 12) en seno/coseno, para no imponer un salto artificial
+    en la frontera del ciclo (23h -> 0h, diciembre -> enero)."""
+    df = df.copy()
+    df[f'{col}_SIN'] = np.sin(2 * np.pi * df[col] / periodo)
+    df[f'{col}_COS'] = np.cos(2 * np.pi * df[col] / periodo)
+    return df
+
+
+# Factor de inflacion de la varianza (VIF): cuanto se puede predecir
+# cada variable a partir de TODAS las demas combinadas, no solo de otra
+# tomada de dos en dos -- por eso complementa, y no sustituye, al
+# cribado de correlaciones por pares
+import statsmodels.api as sm
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+X_vif = sm.add_constant(X_train_op.astype(float))
+vif_df = pd.DataFrame({
+    'variable': X_vif.columns,
+    'VIF': [variance_inflation_factor(X_vif.values, i) for i in range(X_vif.shape[1])]
+})
+vif_df = vif_df[vif_df['variable'] != 'const'].sort_values('VIF', ascending=False)
+\end{lstlisting}
+
+\subsection{Validación de esquema y diagnóstico de valores ausentes (\texttt{src/pipelines/limpieza.py})}
+\label{app:validacion_esquema}
+
+Las dos funciones que sostienen la reproducibilidad frente a un Excel nuevo de otro año o de otra ciudad (Sección~6.5): fallar rápido y de forma legible si falta una columna esperada, y avisar si aparece una convención de ``sin dato'' que el sistema todavía no reconoce como tal.
+
+\begin{lstlisting}[caption={Validación de esquema y diagnóstico de valores ``sin dato'' no reconocidos.}]
+def validar_esquema(df, columnas_requeridas):
+    """Comprueba que `df` tiene al menos las columnas de
+    `columnas_requeridas`, y falla con un mensaje explicito si falta
+    alguna -- en vez de un KeyError criptico varias funciones mas abajo."""
+    columnas_faltantes = set(columnas_requeridas) - set(df.columns)
+    if columnas_faltantes:
+        raise ValueError(
+            'El Excel cargado no tiene el formato esperado, faltan '
+            f'columnas: {sorted(columnas_faltantes)}'
+        )
+
+
+def diagnosticar_valores_sin_dato_no_reconocidos(df, valores_conocidos=VALORES_NULOS):
+    """Busca en las columnas de texto valores que parezcan representar
+    "sin dato" (contienen palabras como DESCONOCIDO, NO ASIGNADO, N/D,
+    NULL...) pero que NO esten en `valores_conocidos` -- es decir, que
+    normalizar_nulos() dejaria pasar tal cual como una categoria mas, en
+    vez de convertirlos en NaN.
+
+    Devuelve un dict {columna: [valores sospechosos]}, vacio si no hay
+    nada que revisar."""
+    valores_conocidos_upper = {str(v).upper() for v in valores_conocidos}
+    sospechosos = {}
+    for col in df.select_dtypes(include=['object', 'string']).columns:
+        encontrados = sorted({
+            v for v in df[col].dropna().unique()
+            if isinstance(v, str)
+            and v.upper() not in valores_conocidos_upper
+            and _PATRON_SIN_DATO_SOSPECHOSO.search(v)
+        })
+        if encontrados:
+            sospechosos[col] = encontrados
+    return sospechosos
+\end{lstlisting}
+
+\subsection{Predicción de un accidente individual (\texttt{src/pipelines/pipeline\_produccion.py})}
+\label{app:predecir_individual}
+
+La función que usa realmente la aplicación web (Sección~6.3): a partir únicamente de los datos que se conocerían en el momento del aviso, construye la misma fila de variables que vio el modelo en entrenamiento y llama a \texttt{predict\_proba} --- el mismo mecanismo, explicado en la Sección~4.1, por el que un modelo entrenado sobre una etiqueta binaria (grave/no grave) puede devolver un porcentaje.
+
+\begin{lstlisting}[caption={Predicción de la probabilidad de gravedad de un accidente individual, a partir de los datos disponibles en el momento del aviso.}]
+def predecir_accidente_individual(self, modelo, distrito, fecha_hora,
+                                   tipo_accidente, tipo_via=None,
+                                   lugar_texto=None, es_cruce=None,
+                                   meteorologia='Seco',
+                                   estado_firme='Seca Y Limpia',
+                                   incluye_moto=False, incluye_bici=False):
+    """Predice la probabilidad de gravedad de UN accidente a partir de
+    los datos disponibles en el momento del aviso -- sin depender de
+    LESIVIDAD ni de ningun dato de las personas implicadas (es el caso
+    de uso real de la Pregunta 1, el que usa la webapp)."""
+    # (documentacion completa de cada parametro omitida aqui, ver repositorio)
+    assert self.ajustado, "El pipeline no esta ajustado."
+
+    fecha_hora = pd.to_datetime(fecha_hora)
+    hora, mes = fecha_hora.hour, fecha_hora.month
+    es_finde = int(fecha_hora.dayofweek >= 5)
+
+    if lugar_texto is not None:
+        tipo_via_final = prep.tipo_via(lugar_texto)
+        es_cruce_final = int(' - ' in lugar_texto.upper())
+    else:
+        tipo_via_final = tipo_via
+        es_cruce_final = int(bool(es_cruce)) if es_cruce is not None else 0
+
+    if tipo_via_final not in self.cats_tipo_via + [self.ref_via]:
+        print(f"Aviso: TIPO_VIA '{tipo_via_final}' no vista en train "
+              "-- se trata como la categoria de referencia.")
+
+    fila = {}
+    fila['ES_CRUCE'] = es_cruce_final
+    fila['ES_FINDE'] = es_finde
+    fila['HORA_SIN'] = np.sin(2 * np.pi * hora / 24)
+    fila['HORA_COS'] = np.cos(2 * np.pi * hora / 24)
+    fila['MES_SIN'] = np.sin(2 * np.pi * mes / 12)
+    fila['MES_COS'] = np.cos(2 * np.pi * mes / 12)
+
+    # Construye las columnas one-hot (meteorologia, firme, tipo de via,
+    # tipo de accidente) comparando cada categoria posible con la
+    # recibida -- exactamente el mismo esquema aprendido en fit()
+    for col in self.features_operativo:
+        if col.startswith('CPFA '):
+            fila[col] = int(col == f'CPFA {meteorologia}')
+        elif col.startswith('CPSV '):
+            fila[col] = int(col == f'CPSV {estado_firme}')
+        elif col.startswith('VIA_'):
+            fila[col] = int(col == f'VIA_{tipo_via_final}')
+        elif col.startswith('ACC_'):
+            fila[col] = int(col == f'ACC_{tipo_accidente}')
+
+    # Agregados historicos del distrito: se usa el mapeo ya aprendido en
+    # fit() (nunca recalculado), con la media global como respaldo si el
+    # distrito no se vio en entrenamiento
+    for nuevo, (col, mapping, global_mean) in self.mapeos_encoding.items():
+        fila[nuevo] = mapping.get(distrito, global_mean)
+
+    fila['INCLUYE_MOTO'] = int(incluye_moto)
+    fila['INCLUYE_BICI'] = int(incluye_bici)
+
+    X_individual = pd.DataFrame([fila])[self.features_operativo]
+    probabilidad = modelo.predict_proba(X_individual)[0, 1]
+
+    return {
+        'probabilidad_grave': round(float(probabilidad), 4),
+        'inputs_interpretados': {
+            'distrito': distrito, 'hora': hora, 'mes': mes,
+            'es_finde': bool(es_finde), 'tipo_accidente': tipo_accidente,
+            'tipo_via': tipo_via_final, 'es_cruce': bool(es_cruce_final),
+            'meteorologia': meteorologia, 'estado_firme': estado_firme,
+            'incluye_moto': bool(incluye_moto), 'incluye_bici': bool(incluye_bici),
+        },
+    }
+\end{lstlisting}
+
+\subsection{Rejilla de hiperparámetros y métricas de evaluación (\texttt{src/models/entrenamiento.py})}
+\label{app:hiperparametros}
+
+La función que ejecuta, para cada algoritmo, la rejilla manual de combinaciones descrita en la Sección~4.2, calculando el sobreajuste siempre contra la validación cruzada dentro de entrenamiento --- nunca contra el conjunto de prueba, para no filtrar información hacia la evaluación final --- seguida de las funciones que calculan las métricas de la tabla~\ref{tab:comparacion_operativo} y el ``gap train-test'' de la tabla~\ref{tab:fortalezas}.
+
+\begin{lstlisting}[caption={Exploración manual de una rejilla de hiperparámetros, con validación temporal dentro de entrenamiento.}]
+def explorar_hiperparametros(estimador_factory, grid, X_train, y_train, cv_splits=5):
+    """Grid MANUAL y explicito (no distribuciones aleatorias): prueba
+    cada combinacion exacta del `grid` dado, entrenando sobre TODO train
+    y validando con TimeSeriesSplit -- todo dentro de train, sin tocar
+    test en ningun momento de esta exploracion.
+
+    El gap se calcula como AUC_train - AUC_cv (validacion cruzada dentro
+    de train), NO como AUC_train - AUC_test: si se calculara el gap
+    contra test para elegir entre combinaciones, se estaria mirando el
+    test repetidamente para decidir -- la misma fuga de informacion que
+    la validacion cruzada existe para evitar.
+
+    Devuelve una tabla ordenada por AUC_cv descendente, con `AUC_cv_se`
+    (error estandar entre folds) que permite aplicar la regla de "1 error
+    estandar" (Hastie, Tibshirani y Friedman) al elegir configuracion: la
+    mejor por AUC_cv no siempre es la mas adecuada si su ventaja esta
+    dentro del ruido de la validacion cruzada."""
+    from sklearn.model_selection import ParameterGrid, TimeSeriesSplit, cross_val_score
+
+    cv = TimeSeriesSplit(n_splits=cv_splits)
+    resultados = []
+
+    for params in ParameterGrid(grid):
+        modelo = estimador_factory(**params)
+        scores_cv = cross_val_score(modelo, X_train, y_train,
+                                     scoring='roc_auc', cv=cv, n_jobs=-1)
+        auc_cv = scores_cv.mean()
+        auc_cv_se = scores_cv.std(ddof=1) / np.sqrt(len(scores_cv))
+        modelo.fit(X_train, y_train)
+        auc_train = roc_auc_score(y_train, modelo.predict_proba(X_train)[:, 1])
+
+        resultados.append({
+            **params,
+            'AUC_train': round(auc_train, 4),
+            'AUC_cv': round(auc_cv, 4),
+            'AUC_cv_se': round(auc_cv_se, 4),
+            'gap_train_cv': round(auc_train - auc_cv, 4),
+        })
+
+    return pd.DataFrame(resultados).sort_values('AUC_cv', ascending=False)
+
+
+def evaluar_modelo(modelo, X, y, umbral=0.5):
+    """Calcula el conjunto de metricas relevante para un problema
+    desbalanceado: AUC-ROC y AUC-PR (no dependen de un umbral), Brier
+    score (calibracion), y precision/recall/F1 en el umbral dado (por
+    defecto 0.5 -- recordar que con este nivel de desbalanceo, 0.5 puede
+    no ser el mejor punto de corte para un uso real de priorizacion)."""
+    y_proba = modelo.predict_proba(X)[:, 1]
+    y_pred = (y_proba >= umbral).astype(int)
+    return {
+        'AUC-ROC': roc_auc_score(y, y_proba),
+        'AUC-PR': average_precision_score(y, y_proba),
+        'Brier score': brier_score_loss(y, y_proba),
+        f'Precision (umbral={umbral})': precision_score(y, y_pred, zero_division=0),
+        f'Recall (umbral={umbral})': recall_score(y, y_pred, zero_division=0),
+        f'F1 (umbral={umbral})': f1_score(y, y_pred, zero_division=0),
+    }
+
+
+def tabla_comparativa_modelos(modelos, X_train, y_train, X_test, y_test, umbral=0.5):
+    """Evalua varios modelos ya entrenados EN TRAIN Y EN TEST -- no solo
+    en test -- para poder medir el gap train-test (sintoma de
+    overfitting). Un modelo con AUC-ROC ~0.99 en train y ~0.75 en test
+    esta sobreajustando, aunque su metrica de test por si sola parezca
+    razonable."""
+    filas = {}
+    for nombre, modelo in modelos.items():
+        m_train = evaluar_modelo(modelo, X_train, y_train, umbral=umbral)
+        m_test = evaluar_modelo(modelo, X_test, y_test, umbral=umbral)
+        fila = {f'{k}_train': v for k, v in m_train.items()}
+        fila.update({f'{k}_test': v for k, v in m_test.items()})
+        fila['gap_AUC-ROC'] = m_train['AUC-ROC'] - m_test['AUC-ROC']
+        filas[nombre] = fila
+    return pd.DataFrame(filas).T.round(4)
+\end{lstlisting}
+
+\subsection{Validaciones adicionales: estabilidad del bagging, deriva temporal y ventana expansiva (\texttt{src/models/entrenamiento.py})}
+\label{app:validaciones}
+
+Tres comprobaciones adicionales, más allá de la evaluación principal en test: la rejilla de estabilidad del \emph{Random Forest} (Sección~4.2), la comparación entre el split temporal y uno aleatorio para aislar la deriva de la tasa de gravedad (Sección~4.4), y la validación de ventana expansiva (figura~\ref{fig:walkforward}). Esta última documenta explícitamente, en su propio docstring, la limitación ya reconocida en la Sección~7.2: las variables aprendidas del histórico (target encoding de distrito, categorías de vía) no se reajustan en cada iteración, por simplicidad, lo que podría favorecer ligeramente a los años más tempranos de la validación.
+
+\begin{lstlisting}[caption={Estabilidad del bagging, comparación temporal vs. aleatoria, y validación de ventana expansiva.}]
+def analisis_estabilidad_bagging(X_train, y_train, X_test, y_test,
+                                  porcentajes=(0.2, 0.4, 0.6, 0.8, 1.0),
+                                  n_arboles=(100, 300, 500),
+                                  profundidades=(5, 10, None),
+                                  random_state=42):
+    """Grid de estabilidad del bagging para Random Forest: barre el
+    porcentaje de muestra por arbol (`max_samples`), el numero de
+    arboles (`n_estimators`) y la profundidad maxima de cada arbol
+    (`max_depth`), midiendo AUC-ROC en train y test y el gap entre
+    ambos en cada combinacion.
+
+    Se anade `max_depth` como tercera dimension porque variar solo
+    `max_samples`/`n_estimators` no corrige el overfitting si cada
+    arbol individual ya memoriza el train (arboles sin limite de
+    profundidad, `max_depth=None`, por defecto en sklearn) -- el
+    bagging reduce varianza entre arboles, pero si todos parten ya
+    sobreajustados, promediarlos no resuelve el problema de raiz."""
+    resultados = []
+    for prof in profundidades:
+        for pct in porcentajes:
+            for n in n_arboles:
+                modelo = RandomForestClassifier(
+                    n_estimators=n, max_samples=pct, max_depth=prof,
+                    class_weight='balanced', random_state=random_state, n_jobs=-1
+                )
+                modelo.fit(X_train, y_train)
+                auc_train = roc_auc_score(y_train, modelo.predict_proba(X_train)[:, 1])
+                auc_test = roc_auc_score(y_test, modelo.predict_proba(X_test)[:, 1])
+                resultados.append({
+                    'max_depth': prof if prof is not None else 'Sin limite',
+                    'max_samples': pct, 'n_estimators': n,
+                    'AUC_train': round(auc_train, 4), 'AUC_test': round(auc_test, 4),
+                    'gap': round(auc_train - auc_test, 4),
+                })
+    return pd.DataFrame(resultados).sort_values('gap')
+
+
+def comparar_splits_temporal_vs_aleatorio(datos_temporal, datos_aleatorio, modelo_factory):
+    """Entrena el MISMO modelo (misma configuracion, via
+    `modelo_factory`) sobre dos splits distintos -- temporal (train
+    2012-2017 / test 2018) y aleatorio estratificado -- para separar
+    dos cosas que se confunden facilmente: si el AUC-ROC es similar en
+    ambos splits pero la calibracion solo empeora en el temporal, el
+    problema es la deriva real de la tasa de gravedad a lo largo de los
+    anos, no un fallo del modelo ni del split en si. El split aleatorio,
+    al ser estratificado, oculta por construccion esa deriva -- por eso
+    NO sirve para detectar este problema, solo el temporal lo revela."""
+    filas = {}
+    for nombre_split, (X_train, y_train, X_test, y_test) in [
+        ('Temporal (train 2012-17 / test 2018)', datos_temporal),
+        ('Aleatorio estratificado', datos_aleatorio),
+    ]:
+        modelo = modelo_factory()
+        modelo.fit(X_train, y_train)
+        m_train = evaluar_modelo(modelo, X_train, y_train)
+        m_test = evaluar_modelo(modelo, X_test, y_test)
+        filas[nombre_split] = {
+            'AUC-ROC_train': m_train['AUC-ROC'], 'AUC-ROC_test': m_test['AUC-ROC'],
+            'gap_AUC-ROC': m_train['AUC-ROC'] - m_test['AUC-ROC'],
+            'tasa_grave_train_%': y_train.mean() * 100,
+            'tasa_grave_test_%': y_test.mean() * 100,
+        }
+    return pd.DataFrame(filas).T.round(4)
+
+
+def validacion_temporal_expansiva(X, y, anos, modelo_factory, ano_min_train=2013, ano_max=2018):
+    """Validacion walk-forward (ventana expansiva) por ano natural: para
+    cada ano de validacion Y, entrena con todos los datos de anos
+    anteriores a Y y valida sobre el ano Y, avanzando ano a ano.
+
+    LIMITACION IMPORTANTE, documentada tambien en la memoria (Seccion
+    8.2): las variables ya construidas (target encoding de DISTRITO,
+    one-hot de TIPO_VIA/TIPO ACCIDENTE) se ajustaron una unica vez sobre
+    2012-2017 en 03_Feature_Engineering.ipynb, no se reajustan dentro de
+    cada fold. Un walk-forward estrictamente sin fuga de informacion
+    exigiria reajustar esas transformaciones en cada iteracion usando
+    solo los anos de ese fold -- aqui se usa la aproximacion mas simple
+    (features fijas), que puede optimizar ligeramente los folds mas
+    tempranos. No afecta al resultado principal del trabajo (el split
+    train 2012-2017 / test 2018), solo a esta comprobacion adicional de
+    robustez."""
+    resultados = []
+    for ano_val in range(ano_min_train + 1, ano_max + 1):
+        mask_train = anos < ano_val
+        mask_val = anos == ano_val
+        if mask_train.sum() == 0 or mask_val.sum() == 0:
+            continue
+        modelo = modelo_factory()
+        modelo.fit(X[mask_train], y[mask_train])
+        y_proba = modelo.predict_proba(X[mask_val])[:, 1]
+        resultados.append({
+            'ano_validacion': ano_val,
+            'n_train': int(mask_train.sum()),
+            'tasa_grave_val_%': round(y[mask_val].mean() * 100, 2),
+            'AUC-ROC_val': round(roc_auc_score(y[mask_val], y_proba), 4),
+        })
+    return pd.DataFrame(resultados)
+\end{lstlisting}
+
+\subsection{Interpretabilidad: SHAP, odds ratios, desglose por distrito y efecto de composición (\texttt{src/utils/interpretabilidad.py})}
+\label{app:interpretabilidad}
+
+Las funciones detrás de la tabla de factores de mayor peso (Sección~5.2): extraen la importancia media de cada variable directamente del objeto que devuelve SHAP --- sin copiar ningún número a mano desde un gráfico--- y la traducen a puntos de probabilidad partiendo del punto base real del modelo, no de la tasa media bruta del dataset.
+
+\begin{lstlisting}[caption={Conversión de una contribución SHAP (log-odds) a puntos de probabilidad, y tabla de importancia global.}]
+def _log_odds_a_probabilidad(log_odds):
+    """Sigmoide: convierte log-odds a probabilidad (0-1)."""
+    return 1 / (1 + np.exp(-log_odds))
+
+
+def shap_a_puntos_probabilidad(shap_value, log_odds_base):
+    """Convierte una contribucion SHAP (en log-odds) a un cambio
+    aproximado en puntos de probabilidad, partiendo de un log-odds base
+    concreto. El resultado depende del punto de partida (no linealidad
+    de la sigmoide), asi que no es un factor de conversion fijo -- es
+    ilustrativo, para dar intuicion de magnitud, no un valor exacto."""
+    prob_base = _log_odds_a_probabilidad(log_odds_base)
+    prob_nueva = _log_odds_a_probabilidad(log_odds_base + shap_value)
+    return (prob_nueva - prob_base) * 100
+
+
+def tabla_importancia_shap(shap_values, top_n=15):
+    """Extrae automaticamente de un objeto shap.Explanation la
+    importancia media (|SHAP|, en log-odds) de cada variable, y la
+    convierte a una estimacion aproximada en puntos de probabilidad.
+
+    El log-odds base se toma directamente de shap_values.base_values (el
+    valor real usado por el propio explainer para esta muestra y este
+    modelo), no de una tasa recalculada aparte -- asi la conversion queda
+    garantizada consistente con los valores SHAP que se estan
+    interpretando, incluso si el modelo o la muestra cambian entre
+    ejecuciones."""
+    feature_names = list(shap_values.feature_names)
+    valores = np.asarray(shap_values.values)
+    base_values = np.asarray(shap_values.base_values)
+    log_odds_base = float(np.mean(base_values))
+
+    importancia_media = np.abs(valores).mean(axis=0)
+
+    tabla = pd.DataFrame({
+        'variable': feature_names,
+        'SHAP_log_odds': importancia_media,
+        'puntos_probabilidad_aprox': [
+            shap_a_puntos_probabilidad(v, log_odds_base) for v in importancia_media
+        ],
+    }).sort_values('SHAP_log_odds', ascending=False).reset_index(drop=True)
+
+    if top_n:
+        return tabla.head(top_n)
+    return tabla
+
+
+def tabla_odds_ratios(modelo_logreg, feature_names, top_n=15):
+    """Extrae automaticamente de una LogisticRegression binaria ya
+    entrenada los odds ratios de cada variable -- exp(coeficiente) --
+    para usarlos como validacion cruzada de la importancia SHAP con un
+    modelo de naturaleza distinta (lineal, coeficientes constantes)
+    frente al ensemble de arboles. A diferencia de los puntos de
+    probabilidad (que dependen del punto de partida), el odds ratio es
+    constante: "esta variable multiplica las odds de gravedad por X,
+    manteniendo el resto constante" -- es el numero citado en la
+    Seccion 6.2 (odds ratio de 4.68 para la presencia de una moto)."""
+    coeficientes = np.asarray(modelo_logreg.coef_).ravel()
+    tabla = pd.DataFrame({
+        'variable': list(feature_names),
+        'coeficiente': coeficientes,
+        'odds_ratio': np.exp(coeficientes),
+    }).sort_values('coeficiente', key=np.abs, ascending=False).reset_index(drop=True)
+    if top_n:
+        return tabla.head(top_n)
+    return tabla
+
+
+def tabla_shap_por_distrito(shap_values, muestra, pipe, columna='TASA_GRAVEDAD_HIST_DISTRITO'):
+    """Traduce la contribucion SHAP de un agregado historico de distrito
+    de vuelta al nombre real del distrito, usando el mapeo aprendido y
+    guardado dentro del propio PipelineAccidentes (pipe.mapeos_encoding)
+    en vez de recalcularlo o copiarlo a mano -- la tabla detras de
+    tab:distritos (Seccion 6.3). Solo es exacto sobre filas de TEST: en
+    train el valor viene de un target encoding out-of-fold, por lo que
+    un mismo distrito puede tener valores ligeramente distintos entre
+    filas y el mapeo inverso no seria exacto."""
+    col_original, mapping, _ = pipe.mapeos_encoding[columna]
+    mapeo_inverso = {round(valor, 10): distrito for distrito, valor in mapping.items()}
+    idx = list(muestra.columns).index(columna)
+    distrito = muestra[columna].round(10).map(mapeo_inverso)
+
+    if distrito.isna().sum() > 0:
+        raise ValueError('Filas de la muestra no coinciden con ningun valor de '
+                          'pipe.mapeos_encoding -- probablemente incluye filas de train.')
+
+    tabla = pd.DataFrame({
+        col_original: distrito.values,
+        'shap_valor': shap_values.values[:, idx],
+        'tasa_hist': muestra[columna].values,
+    })
+    resumen = (
+        tabla.groupby(col_original)
+        .agg(n=('shap_valor', 'size'), shap_medio=('shap_valor', 'mean'), tasa_hist=('tasa_hist', 'first'))
+        .sort_values('shap_medio', ascending=False)
+        .reset_index()
+        .rename(columns={col_original: 'DISTRITO'})
+    )
+    return resumen
+\end{lstlisting}
+
+Como comprobación adicional del efecto de composición descrito en la Sección~5.2 (por qué el número de personas implicadas no tiene una relación monótona con la gravedad), se verificó la tasa de gravedad real por grupo de tamaño, junto con los dos tests estadísticos citados en el texto.
+
+\begin{lstlisting}[caption={Verificación estadística del efecto de composición entre número de personas implicadas y tipo de accidente.}]
+from scipy.stats import mannwhitneyu, chi2_contingency
+
+# Agrupa 3+ por tamano de muestra insuficiente para tratarlo por separado
+grupo_n_pers = X_train_ref['N_PERSONAS_IMPLICADAS'].apply(lambda x: str(int(x)) if x < 3 else '3+')
+tasa_por_n_pers = (pd.DataFrame({'grupo': grupo_n_pers, 'GRAVE': y_train})
+                   .groupby('grupo')['GRAVE'].agg(['mean', 'count'])
+                   .rename(columns={'mean': 'pct_grave', 'count': 'n'}))
+
+# Mann-Whitney: confirma que N_PERSONAS_IMPLICADAS y GRAVE no son
+# independientes, sin asumir una relacion lineal ni normalidad
+_, p_mw = mannwhitneyu(X_train_ref['N_PERSONAS_IMPLICADAS'], y_train)
+
+# Chi-cuadrado sobre el grupo ya categorizado (1 / 2 / 3+), con el
+# porcentaje de celdas con frecuencia esperada < 5 como chequeo de
+# validez del propio test (regla de Cochran)
+ct = pd.crosstab(grupo_n_pers, y_train)
+chi2_val, p_chi2, _, expected = chi2_contingency(ct)
+
+print(tasa_por_n_pers)
+print(f"Mann-Whitney U: p={p_mw:.2e}")
+print(f"Chi2: {chi2_val:.1f}, p={p_chi2:.2e}, "
+      f"% celdas esperada<5: {(expected < 5).mean()*100:.1f}%")
+\end{lstlisting}
+
+\subsection{Sugerencia de recursos en la webapp (\texttt{webapp/api.py})}
+\label{app:recursos}
+
+La capa de reglas de negocio descrita en la Sección~6.3, que combina la probabilidad del modelo operativo con el tipo de accidente para sugerir qué recursos reforzar --- deliberadamente no es una salida del modelo, ya que el histórico no registra qué recursos se enviaron a cada accidente.
+
+\begin{lstlisting}[caption={Sugerencia de recursos, por reglas de negocio, a partir de la probabilidad del modelo y el tipo de accidente.}]
+def sugerir_recursos(probabilidad, inputs):
+    """Sugerencia ORIENTATIVA de que recursos reforzar, a partir de
+    reglas de dominio sobre la probabilidad y el tipo de accidente -- NO
+    es una salida del modelo: el dataset de entrenamiento no registra
+    que recursos se enviaron a cada accidente historico. El 112 no
+    aparece aqui como "recurso" porque es el canal de coordinacion a
+    traves del cual se despachan los demas, no una alternativa a ellos."""
+    recursos = [{
+        "recurso": "Policia Municipal",
+        "motivo": "Regulacion del trafico y atestado del accidente",
+    }]
+
+    usuario_vulnerable = (
+        inputs.get("tipo_accidente") == "ATROPELLO"
+        or inputs.get("incluye_moto")
+        or inputs.get("incluye_bici")
+    )
+    if probabilidad >= 0.5 or usuario_vulnerable:
+        motivo = (
+            "Probabilidad de gravedad alta"
+            if probabilidad >= 0.5
+            else "Usuario vulnerable de la via implicado (peaton, moto o bicicleta)"
+        )
+        recursos.append({"recurso": "SAMUR -- asistencia sanitaria reforzada", "motivo": motivo})
+
+    if inputs.get("tipo_accidente") in ("VUELCO", "COLISION MULTIPLE") and probabilidad >= 0.5:
+        recursos.append({
+            "recurso": "Bomberos -- posible excarcelacion",
+            "motivo": f'{inputs["tipo_accidente"].capitalize()} con probabilidad de gravedad alta',
+        })
+
+    return recursos
+\end{lstlisting}
 
 \end{document}
