@@ -37,6 +37,12 @@ class PipelineAccidentes:
     atributos del objeto, para poder serializarlo con `save()`/`load()` y
     aplicarlo después a datos nuevos con `transform()`/`predecir()`."""
 
+    # Por debajo de este nº de accidentes en train, una categoría de TIPO
+    # ACCIDENTE se fusiona con 'OTRAS CAUSAS' antes del one-hot: con menos
+    # apariciones, una columna propia es más ruido que señal (solo afecta a
+    # 'CAÍDA VEHÍCULO 3 RUEDAS', 6 casos en todo el histórico 2012-2018).
+    UMBRAL_CATEGORIA_RARA_ACC = 30
+
     def __init__(self, m_target_encoding=50):
         self.m = m_target_encoding
         self.ajustado = False
@@ -95,6 +101,10 @@ class PipelineAccidentes:
         las features, por si se quiere inspeccionar."""
         df_final, cols_binarias = self._limpiar_y_preprocesar(df_raw)
 
+        df_final['TIPO ACCIDENTE'], self.categorias_raras_acc = fe.agrupar_categorias_raras(
+            df_final['TIPO ACCIDENTE'], self.UMBRAL_CATEGORIA_RARA_ACC, 'OTRAS CAUSAS'
+        )
+
         self.ref_via = df_final['TIPO_VIA'].value_counts().idxmax()
         self.ref_acc = df_final['TIPO ACCIDENTE'].value_counts().idxmax()
         self.cats_tipo_via = [c for c in sorted(df_final['TIPO_VIA'].unique()) if c != self.ref_via]
@@ -147,6 +157,10 @@ class PipelineAccidentes:
         aprendidos en fit() -- nunca recalculados sobre el dato nuevo."""
         assert self.ajustado, "El pipeline no está ajustado: llama a .fit(df_train) o .load(path) primero."
         df_final, _ = self._limpiar_y_preprocesar(df_raw_nuevo)
+
+        df_final['TIPO ACCIDENTE'], _ = fe.agrupar_categorias_raras(
+            df_final['TIPO ACCIDENTE'], None, 'OTRAS CAUSAS', categorias_raras=self.categorias_raras_acc
+        )
 
         for nuevo, (col, mapping, global_mean) in self.mapeos_encoding.items():
             df_final[nuevo] = df_final[col].map(mapping).fillna(global_mean)
@@ -219,6 +233,9 @@ class PipelineAccidentes:
         Devuelve un dict con la probabilidad predicha y un resumen de los
         inputs usados, para poder revisar que se ha interpretado todo bien."""
         assert self.ajustado, "El pipeline no está ajustado: llama a .fit(df_train) o .load(path) primero."
+
+        if tipo_accidente in self.categorias_raras_acc:
+            tipo_accidente = 'OTRAS CAUSAS'
 
         fecha_hora = pd.to_datetime(fecha_hora)
         hora, mes = fecha_hora.hour, fecha_hora.month
