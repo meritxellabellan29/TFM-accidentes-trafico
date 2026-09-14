@@ -39,7 +39,14 @@ def registrar_resultados_wandb(tabla, project, modelo, columnas_metricas):
     juntos); `modelo` es el nombre de la familia de modelo de esta tabla
     (p. ej. 'RandomForest'), para distinguir los runs en el panel;
     `columnas_metricas` son las columnas de `tabla` que son resultado (AUC,
-    gap...), no hiperparámetro."""
+    gap...), no hiperparámetro.
+
+    Si `WANDB_MODE=disabled` (p. ej. en un entorno sin acceso a red o sin
+    cuenta configurada), no se intenta ni un solo `wandb.init()`: esta
+    función es un no-op. El panel local equivalente (`graficar_parallel_coordinates`,
+    en `graficos_modelos.py`) no depende de W&B y sigue generándose igual."""
+    if os.environ.get('WANDB_MODE') == 'disabled':
+        return
     columnas_config = [c for c in tabla.columns if c not in columnas_metricas]
     for _, fila in tabla.iterrows():
         run = wandb.init(project=project, group=modelo,

@@ -47,6 +47,26 @@ def codificar_ciclica(df, col, periodo):
     return df
 
 
+def agrupar_categorias_raras(serie, umbral, categoria_otros, categorias_raras=None):
+    """Fusiona en `categoria_otros` las categorías de `serie` con menos de
+    `umbral` apariciones, para que el one-hot posterior no cree columnas casi
+    vacías (una categoría con, p. ej., 6 casos en todo el histórico aporta
+    más ruido que señal como columna propia, y es más inestable de un fold
+    a otro).
+
+    Si se pasa `categorias_raras` (la lista ya aprendida en `fit()` sobre
+    train), se usa esa lista tal cual en vez de recalcularla — imprescindible
+    en `transform()`, para no aprender qué es "raro" mirando datos nuevos.
+    Devuelve (serie_agrupada, categorias_raras) para poder guardar la lista
+    la primera vez que se calcula."""
+    if categorias_raras is None:
+        conteo = serie.value_counts()
+        categorias_raras = conteo[conteo < umbral].index.tolist()
+    if not categorias_raras:
+        return serie, categorias_raras
+    return serie.replace({c: categoria_otros for c in categorias_raras}), categorias_raras
+
+
 def one_hot_fit_train(df, col, cats, prefix):
     """One-hot manual con columnas fijadas por `cats` (aprendidas de train):
     categorías no vistas en `df` quedan a 0 en todas las columnas —

@@ -169,30 +169,66 @@ El resultado es un fuerte desequilibrio de clases: a nivel accidente, solo el 9,
 \item \textbf{Rol:} los conductores son el más frecuente (72\,\%), pero los peatones concentran la mayor proporción de heridos graves y fallecidos --- el colectivo más vulnerable.
 \item \textbf{Sexo:} los hombres registran más volumen de accidentalidad que las mujeres, con gravedad relativa similar.
 \item \textbf{Edad:} mayores de 65 y menores de 18 muestran la mayor gravedad relativa; los tramos de 25 a 44 años concentran el mayor volumen, por ser los conductores más activos.
-\item \textbf{Vehículo:} motocicletas y bicicletas tienen la mayor tasa de lesividad grave; los turismos concentran el mayor volumen absoluto.
+\item \textbf{Vehículo:} motocicletas y bicicletas tienen la mayor tasa de lesividad grave (figura~\ref{fig:lesividad_vehiculo}); los turismos concentran el mayor volumen absoluto.
 \end{itemize}
 
 Un 18\,\% de los registros de persona no tiene tipo de vehículo asignado, pero no es un problema de calidad sino estructural: el 99,94\,\% de los peatones no tiene vehículo (lógico, un peatón no conduce ninguno), mientras que conductores y viajeros tienen el dato casi completo.
 
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{../figures/13_lesividad_por_vehiculo.png}
+\caption{Distribución de lesividad por tipo de vehículo (valores absolutos y \%). Motocicletas, bicicletas y ciclomotores destacan por su proporción de heridos graves y fallecidos frente al turismo, pese a un volumen absoluto mucho menor.}
+\label{fig:lesividad_vehiculo}
+\end{figure}
+
 \subsection{Análisis temporal}
 
-El número de accidentes crece a lo largo del periodo, con estacionalidad clara: octubre, noviembre y junio concentran más accidentalidad; julio y agosto, menos, probablemente por el tráfico vacacional. Los días laborables superan al fin de semana, y las horas punta (9h, 14h, 17h) son las de mayor volumen. El cruce de día y franja horaria (figura~\ref{fig:heatmap}) señala un punto de máxima concentración muy concreto: el viernes entre las 14h y las 16h.
+Como la variable objetivo es la gravedad y no el volumen, el cruce más relevante de esta sección es la tasa de HG+MT por día y franja horaria (figura~\ref{fig:heatmap_gravedad}): la madrugada --- especialmente de 2h a 6h, y con mayor intensidad los fines de semana--- destaca de forma consistente sobre el resto de horas. Es un patrón puramente descriptivo en esta fase, que la Sección~\ref{sec:focalizacion} confirma después de forma independiente con SHAP y regresión logística.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{../figures/07e_heatmap_gravedad_dia_hora.png}
+\caption{Mapa de calor de la tasa de gravedad (\% HG+MT) por día de la semana y franja horaria.}
+\label{fig:heatmap_gravedad}
+\end{figure}
+
+Por volumen, en cambio, el patrón es justo el opuesto: el número de accidentes crece a lo largo del periodo, con estacionalidad clara (octubre, noviembre y junio concentran más accidentalidad; julio y agosto, menos, probablemente por el tráfico vacacional), los días laborables superan al fin de semana, y las horas punta (9h, 14h, 17h) son las de mayor volumen --- el cruce de día y franja horaria por volumen (figura~\ref{fig:heatmap}) señala su punto máximo el viernes entre las 14h y las 16h, precisamente la franja opuesta a la madrugada de mayor riesgo. Se incluye como contraste: la madrugada es una franja de bajo volumen pero alta gravedad, y el viernes tarde, lo contrario.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.8\textwidth]{../figures/07d_heatmap_dia_hora.png}
-\caption{Mapa de calor de accidentalidad por día de la semana y franja horaria.}
+\caption{Mapa de calor de accidentalidad (volumen) por día de la semana y franja horaria, incluido como contraste con la figura~\ref{fig:heatmap_gravedad}.}
 \label{fig:heatmap}
 \end{figure}
 
 \subsection{Análisis geográfico}
 
-El distrito explica razonablemente bien el \emph{volumen} de accidentes, pero apenas su \emph{gravedad}. Al cruzar accidentes por distrito con población media (figura~\ref{fig:poblacion}), una población más alta no se traduce en más accidentes: Salamanca, Chamartín y Centro lideran la tasa por 100.000 habitantes sin ser los más poblados, lo que apunta al tráfico de paso como factor determinante del volumen. En cambio, los distritos con mayor proporción de heridos graves (figura~\ref{fig:tasa_distrito}) --- Vicálvaro, Latina, Puente y Villa de Vallecas--- no coinciden con los de mayor accidentalidad absoluta, lo que sugiere que el tipo de vía (carreteras de alta velocidad en la periferia) pesa más en la gravedad que el volumen bruto de tráfico.
+El recuento bruto de accidentes por distrito no es comparable entre sí sin más: Salamanca puede tener más accidentes que Vicálvaro simplemente por tener más habitantes, no por ser más peligroso. Para relativizar por población hacía falta una variable que el dataset de accidentes no trae --- así que se incorporó una fuente externa, la estadística padronal municipal del Ayuntamiento de Madrid, y se calculó la \textbf{población media aritmética de cada distrito a lo largo de todo el periodo de estudio} (2012--2018), en vez de tomar un único año: una cifra puntual podría no ser representativa de todo el periodo que cubren los accidentes, mientras que la media de los 7 años sí lo es.
+
+Como la variable objetivo es la gravedad, la primera pregunta relevante es si la población de un distrito explica su tasa de accidentes graves --- y no la explica en absoluto (figura~\ref{fig:poblacion_gravedad}): $R^2 = 0{,}001$ ($p = 0{,}88$, no significativo). Es la confirmación cuantitativa, con una variable continua en vez de categórica, de lo ya visto con la V de Cramér (Sección~\ref{sec:asociacion}, $V=0{,}018$): el distrito apenas explica la gravedad, sea cual sea la forma de medir la asociación.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{../figures/08f_scatter_poblacion_gravedad.png}
+\caption{Población media frente a tasa de accidentes graves o mortales por distrito (el tamaño de cada punto representa el nº de accidentes totales). La tendencia es prácticamente plana.}
+\label{fig:poblacion_gravedad}
+\end{figure}
+
+Llevar esa misma tasa a un mapa (figura~\ref{fig:mapa_gravedad}) hace visible el patrón que sí importa, el centro-periferia: los distritos periféricos con vías de alta velocidad --- Vicálvaro (11,0\,\%), Latina (10,9\,\%), Puente de Vallecas (10,7\,\%) y Villa de Vallecas (10,6\,\%)--- concentran la mayor gravedad, mientras que el centro y el noroeste --- Salamanca, Tetuán, Moncloa-Aravaca y Chamartín, todos entre 8,5\,\% y 8,8\,\%--- quedan claramente por debajo de la media. Ni el volumen de población ni el de tráfico explican este patrón: apunta más bien al tipo de vía (carreteras de alta velocidad en la periferia frente a tráfico urbano lento en el centro).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]{../figures/08e_mapa_gravedad_distritos.png}
+\caption{Mapa de la tasa de accidentes graves o mortales por distrito (2012--2018). Escala de color divergente centrada en la media global (9,60\,\%, en blanco) en vez de en el mínimo y máximo de los 21 distritos, para no exagerar visualmente diferencias de un punto porcentual o menos --- coherente con la escasa asociación ya vista (V de Cramér $=0{,}018$). Versión estática, generada con \texttt{geopandas} a partir de las geometrías oficiales de los 21 distritos, del mismo mapa interactivo (\texttt{folium}) disponible en \texttt{figures/08e\_mapa\_gravedad\_distritos.html} (con la escala de color por defecto).}
+\label{fig:mapa_gravedad}
+\end{figure}
+
+Por volumen, en cambio, la población sí es una buena predictora (figura~\ref{fig:poblacion}): $R^2 = 0{,}295$ ($p=0{,}011$), aunque con desviaciones notables --- Salamanca, Chamartín y Centro lideran la tasa por 100.000 habitantes sin ser los más poblados, lo que apunta al tráfico de paso como factor adicional del volumen. Se incluye como contraste con las figuras anteriores: la población predice razonablemente el \emph{volumen} de accidentes, pero no dice nada sobre su \emph{gravedad}.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.8\textwidth]{../figures/08b_scatter_poblacion_accidentes.png}
-\caption{Población media frente a accidentes totales por distrito (el tamaño de cada punto representa la tasa de accidentes por 100.000 habitantes).}
+\caption{Población media frente a accidentes totales por distrito (el tamaño de cada punto representa la tasa de accidentes por 100.000 habitantes), incluida como contraste con la figura~\ref{fig:poblacion_gravedad}.}
 \label{fig:poblacion}
 \end{figure}
 
@@ -211,7 +247,32 @@ El distrito explica razonablemente bien el \emph{volumen} de accidentes, pero ap
 \item \textbf{Estado del firme:} la grava suelta (10,35\,\%) y el aceite (4,64\,\%) tienen la mayor tasa de gravedad, aunque son poco frecuentes; la gran mayoría de accidentes ocurre en firme seco y limpio.
 \end{itemize}
 
+\subsection{Valores atípicos: número de víctimas}
+
+La única variable numérica del dataset, \texttt{Nº VICTIMAS}, presenta una distribución muy asimétrica a la derecha: el 71,9\,\% de los accidentes tiene una sola víctima, con una cola larga de casos con varias. Antes de decidir cómo tratarla se comprobó qué criterio de valores atípicos es aplicable, en vez de asumir el habitual por defecto.
+
+El criterio del rango intercuartílico (IQR) resulta degenerado aquí: como Q1 = Q3 = 1, el IQR vale 0, y aplicarlo marcaría cualquier accidente con dos o más víctimas como atípico --- un 19\,\% del dataset, un falso positivo masivo. La alternativa de la regla $3\sigma$ tampoco es apropiada: el test de Lilliefors rechaza la normalidad de la variable (asimetría 4,68, curtosis 44), supuesto del que depende esa regla. Se adopta en su lugar un criterio de \textbf{percentiles empíricos}, que no asume ninguna forma de distribución: al percentil 95 se consideran atípicos los accidentes con más de 3 víctimas (2,00\,\%); al 99, más de 4 (0,80\,\%).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{../figures/06a_distribucion_victimas.png}
+\caption{Distribución del número de víctimas por accidente (boxplot con bigotes al percentil 99, ya que el criterio IQR por defecto es degenerado para esta variable).}
+\label{fig:victimas}
+\end{figure}
+
+Identificados los valores atípicos, se decide \textbf{no eliminarlos}: no son errores de captura, sino accidentes reales con varios implicados, y \texttt{Nº VICTIMAS} queda de todos modos excluida como variable predictora en la fase de modelización, al ser una consecuencia del propio accidente que solo se conoce después (el mismo criterio de fuga de información temporal aplicado al resto de variables posteriores al aviso). Sí se conserva una versión transformada logarítmicamente para atenuar su asimetría, usada únicamente en la matriz de referencia del modelo explicativo (Sección~3.4).
+
+Aun excluidos como predictor, estos valores atípicos importan para entender la gravedad (figura~\ref{fig:victimas_gravedad}): el \% de accidentes graves se mantiene estable en torno al 9--10\,\% hasta 6 víctimas, pero se dispara al 23\,\% en los accidentes con 7 o más --- el grupo más extremo (percentil 99) es también, con diferencia, el más grave, aunque su tamaño de muestra (117 accidentes) exige cautela.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{../figures/06b_victimas_vs_gravedad.png}
+\caption{Izquierda: número de accidentes según nº de víctimas. Derecha: \% de accidentes graves según nº de víctimas, con el tamaño de muestra de cada grupo.}
+\label{fig:victimas_gravedad}
+\end{figure}
+
 \subsection{Asociación estadística con la gravedad}
+\label{sec:asociacion}
 
 Para identificar qué variables se relacionan más con la gravedad se calculó la \textbf{V de Cramér} de cada variable categórica frente al objetivo --- de 0 (nula) a 1 (perfecta) --- junto con un \textbf{test chi-cuadrado} que confirma si la relación es significativa o podría deberse al azar (función y corrección de Bonferroni en el Anexo~\ref{app:cramer}). Un punto metodológico central: las variables de persona (tipo de persona, sexo, edad, vehículo) varían entre los implicados de un mismo accidente, pero las de accidente (distrito, franja horaria, tipo de siniestro...) son idénticas para todos ellos. Testear estas últimas a nivel persona repetiría cada accidente una vez por implicado, inflando el tamaño muestral y sobrestimando su relevancia (pseudo-replicación). Por eso cada variable se testeó en su nivel real de variación, y el umbral de significancia se corrigió por el número de comparaciones (Bonferroni, $\alpha = 0{,}0024$ para 21 variables).
 
@@ -242,6 +303,15 @@ Distrito & 0,018 & Accidente & Explica el volumen, apenas la gravedad \\
 \caption{Asociación de las principales variables categóricas con la gravedad (V de Cramér, medidas en su nivel real de variación).}
 \label{tab:cramer}
 \end{table}
+
+La tabla se puede leer también de forma visual (figura~\ref{fig:distribucion_variables}): al comparar la distribución de grave frente a no grave para tres de estas variables, tipo de accidente muestra proporciones claramente distintas entre clases (coherente con su V alta, 0,172), franja horaria una diferencia más sutil (V moderada, 0,062), y distrito barras casi indistinguibles (V casi nula, 0,018) --- la misma jerarquía que la tabla~\ref{tab:cramer}, pero visible de un vistazo.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{../figures/05a_desbalanceo_clases.png}
+\caption{Distribución de tipo de accidente, franja horaria y distrito, separada por grave/no grave. El grado de solapamiento entre barras anticipa la V de Cramér de cada variable.}
+\label{fig:distribucion_variables}
+\end{figure}
 
 El chi-cuadrado, ya corregido, confirma como significativas todas las variables de la tabla~\ref{tab:cramer} salvo el mes, más la lluvia y la vía seca. Las condiciones más raras --- granizo, hielo, niebla, nieve, aceite, grava suelta--- quedan cerca de cero en la figura~\ref{fig:cramer}, pero no porque no haya asociación: son tan poco frecuentes (el granizo aparece en solo 9 accidentes de la muestra de test) que ni el chi-cuadrado ni el test exacto de Fisher tienen potencia suficiente para concluir nada. Es una limitación de tamaño muestral, no evidencia de ausencia de asociación --- distinción que se mantiene también en la fase de interpretabilidad.
 
@@ -278,13 +348,13 @@ Se valoraron dos estrategias: una temporal (entrenamiento 2012--2017, prueba 201
 Coherente con las dos preguntas de investigación, se construyeron dos matrices de variables a partir del mismo conjunto preprocesado:
 
 \begin{itemize}
-\item \textbf{Matriz operativa} (39 variables): únicamente información disponible en el momento del aviso (lugar, momento, condiciones, tipo de vía y de siniestro, más un agregado histórico de gravedad y de composición de vehículos por distrito).
-\item \textbf{Matriz de referencia} (43 variables): todo lo anterior más las variables de persona (presencia de peatón, presencia de una persona en edad de riesgo, número de personas implicadas y número de víctimas, transformado logarítmicamente, para atenuar su fuerte asimetría).
+\item \textbf{Matriz operativa} (38 variables): únicamente información disponible en el momento del aviso (lugar, momento, condiciones, tipo de vía y de siniestro, más un agregado histórico de gravedad y de composición de vehículos por distrito).
+\item \textbf{Matriz de referencia} (42 variables): todo lo anterior más las variables de persona (presencia de peatón, presencia de una persona en edad de riesgo, número de personas implicadas y número de víctimas, transformado logarítmicamente, para atenuar su fuerte asimetría).
 \end{itemize}
 
 El distrito ya se representa mediante un agregado histórico, así que no se le aplica además un \emph{one-hot} redundante. Ese agregado se calcula con un suavizado tipo \textbf{Bayes empírico}: la tasa de un distrito con pocos accidentes se combina con la tasa global, ponderada por tamaño de muestra, para que una tasa extrema por puro azar no distorsione el modelo (\emph{target encoding}). En entrenamiento se calcula además fuera de muestra, para que ninguna fila contribuya a su propio valor; en prueba se aplica el mapeo ya aprendido (código en el Anexo~\ref{app:encoding}).
 
-Las \textbf{variables cíclicas} (hora, mes) se codificaron en seno/coseno, para que el modelo no interprete la medianoche y las once de la noche como opuestos. Tipo de vía y tipo de accidente se codificaron en \emph{one-hot} con la categoría más frecuente (calle, colisión doble) como referencia.
+Las \textbf{variables cíclicas} (hora, mes) se codificaron en seno/coseno, para que el modelo no interprete la medianoche y las once de la noche como opuestos. Tipo de vía y tipo de accidente se codificaron en \emph{one-hot} con la categoría más frecuente (calle, colisión doble) como referencia. Antes de ese \emph{one-hot}, las categorías de tipo de accidente con menos de 30 accidentes en entrenamiento se fusionan con ``otras causas'' --- en la práctica, solo afecta a ``caída de vehículo de 3 ruedas'' (6 accidentes en todo el histórico 2012--2018) --- para no crear una columna casi vacía, más inestable de un fold a otro que informativa; el umbral se aprende sobre entrenamiento y se aplica igual sobre prueba y sobre cualquier accidente nuevo.
 
 Las doce columnas de meteorología y firme resultaron ser dos variables categóricas ya codificadas en \emph{one-hot} encubierto (en el 99,9\,\% de los casos, solo una de las seis meteorológicas vale uno): usarlas todas introduciría la trampa clásica de la variable ficticia (colinealidad de $-0{,}98$ entre las dos más frecuentes), así que se eliminó la categoría de referencia de cada grupo (vía seca, firme seco y limpio).
 
@@ -292,7 +362,7 @@ Las doce columnas de meteorología y firme resultaron ser dos variables categór
 
 La colinealidad se revisó en dos pasos:
 \begin{enumerate}[nosep]
-\item Primero, un cribado por pares sobre las 39 variables operativas: solo tres pares superan 0,6, todos con explicación sustantiva --- lluvia y firme mojado (0,89), y la tasa histórica de gravedad del distrito con sus agregados de peatones y motos (0,61 y 0,67, esperable al venir del mismo distrito).
+\item Primero, un cribado por pares sobre las 38 variables operativas: solo tres pares superan 0,6, todos con explicación sustantiva --- lluvia y firme mojado (0,89), y la tasa histórica de gravedad del distrito con sus agregados de peatones y motos (0,61 y 0,67, esperable al venir del mismo distrito).
 \item  Segundo, el factor de \textbf{inflación de la varianza} (VIF, que mide cuánto predicen todas las demás variables combinadas, no solo una a una): ninguna variable supera 10 (el umbral habitual), y las correlaciones más altas quedan en torno a 5,2, una correlación moderada por pares no implica necesariamente un problema de colinealidad global, y viceversa (cálculo en el Anexo~\ref{app:encoding}).
 \end{enumerate}
 
@@ -339,16 +409,18 @@ Por modelo, lo más relevante del ajuste (fortalezas y debilidades completas en 
 \textbf{Modelo} & \textbf{AUC-ROC} & \textbf{AUC-PR} & \textbf{Brier} & \textbf{Gap train-test} \\
 \midrule
 Regresión logística & 0,699 & 0,158 & 0,222 & 0,009 \\
-\emph{Random Forest} & 0,692 & 0,160 & 0,230 & 0,027 \\
+\emph{Random Forest} & 0,693 & 0,166 & 0,223 & 0,027 \\
 \emph{Gradient Boosting} & 0,706 & 0,170 & 0,220 & 0,021 \\
-\textbf{XGBoost} & \textbf{0,708} & \textbf{0,174} & \textbf{0,218} & 0,015 \\
+\textbf{XGBoost} & \textbf{0,707} & \textbf{0,174} & \textbf{0,219} & 0,015 \\
 \bottomrule
 \end{tabular}
 \caption{Comparación de los cuatro modelos operativos ya ajustados, evaluados una única vez sobre el conjunto de prueba (2018).}
 \label{tab:comparacion_operativo}
 \end{table}
 
-\textbf{XGBoost es el modelo operativo elegido}: mejor área bajo la curva ROC y compromiso train-test moderado, seguido muy de cerca por \emph{Gradient Boosting}. El \emph{Random Forest} queda por debajo de los otros tres (el \emph{bagging} generaliza peor que el \emph{boosting} aquí), y la regresión logística es sorprendentemente competitiva --- señal de que buena parte de la información predictiva es aproximadamente lineal. La tabla~\ref{tab:fortalezas} resume fortalezas y debilidades de cada técnica más allá del ranking, y la figura~\ref{fig:roc} sus curvas ROC.
+Las conclusiones de este trabajo se apoyan principalmente en el área bajo la curva ROC, no en el área bajo la curva precisión-recall, aunque el problema esté desequilibrado (9,6\,\% de accidentes graves): el AUC-ROC se usó de forma consistente durante todo el ajuste de hiperparámetros para medir sobreajuste (Sección~4.2) y para la validación temporal (Sección~4.4), así que es la métrica coherente con las decisiones ya tomadas, y su referencia --- 0,5 equivale siempre a azar, sea cual sea el desequilibrio de clases--- es más directa de comunicar a un lector no técnico que la del AUC-PR, cuyo azar de referencia depende de la prevalencia (aquí, 0,096, no 0,5). Ambas métricas coinciden además en el ranking de los cuatro modelos, lo que refuerza que la elección de XGBoost no depende de cuál de las dos se use. Dicho esto, el AUC-PR no es prescindible: un 0,174 frente a un azar de 0,096 es una mejora relativa de casi el doble, mayor de lo que el AUC-ROC por sí solo sugiere --- señal de que, sobre la clase grave en concreto, el modelo aprovecha más señal útil de la que transmite el 0,707 aislado.
+
+\textbf{XGBoost es el modelo operativo elegido}: mejor área bajo la curva ROC y compromiso train-test moderado, seguido muy de cerca por \emph{Gradient Boosting}. El \emph{Random Forest} queda por debajo de los otros tres (el \emph{bagging} generaliza peor que el \emph{boosting} aquí), y la regresión logística es sorprendentemente competitiva --- señal de que buena parte de la información predictiva es aproximadamente lineal. La tabla~\ref{tab:fortalezas} resume fortalezas y debilidades de cada técnica más allá del ranking, la figura~\ref{fig:roc} sus curvas ROC, y la figura~\ref{fig:roc_traintest} el gap train-test de la tabla~\ref{tab:comparacion_operativo} superpuesto sobre la propia curva: la separación entre la curva de entrenamiento (azul) y la de prueba (naranja) es visiblemente mayor en \emph{Random Forest} que en el resto, coherente con su gap de 0,027.
 
 \begin{table}[h]
 \centering
@@ -360,13 +432,13 @@ Regresión logística & 0,699 & 0,158 & 0,222 & 0,009 \\
 Regresión logística & 0,699 &
 Interpretable por diseño (sus coeficientes se leen directamente como razones de probabilidades); apenas sobreajusta (gap 0,009); coste computacional mínimo. &
 Solo capta relaciones lineales entre variables; no detecta por sí sola interacciones (p. ej. cruce $\times$ tipo de vía) sin que se incluyan explícitamente. \\
-\emph{Random Forest} & 0,692 &
+\emph{Random Forest} & 0,693 &
 Robusto a valores atípicos; no exige escalado de variables; sirve de referencia adicional de importancia de variables. &
 Propenso a un sobreajuste severo si no se limita la profundidad (gap hasta 0,30 sin límite); incluso ya corregido, es el modelo con peor discriminación de los cuatro en este problema. \\
 \emph{Gradient Boosting} & 0,706 &
 Controla el sobreajuste ``de fábrica'' (tasa de aprendizaje baja, nodos limitados); capta interacciones no lineales sin especificarlas a mano; generaliza bien casi sin tunear. &
 Menos interpretable que un modelo lineal; su rendimiento es sensible a la tasa de aprendizaje y a la regularización elegidas. \\
-\textbf{XGBoost} & \textbf{0,708} &
+\textbf{XGBoost} & \textbf{0,707} &
 Mejor discriminación de los cuatro; parada temprana real (entrena hasta 500 árboles pero solo conserva los que mejoran la validación); mejor compromiso train-test de los tres ensamblados (gap 0,015). &
 El más complejo de ajustar (más hiperparámetros); menos transparente que un modelo lineal; depende de una librería externa a scikit-learn. \\
 \bottomrule
@@ -382,9 +454,16 @@ El más complejo de ajustar (más hiperparámetros); menos transparente que un m
 \label{fig:roc}
 \end{figure}
 
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.85\textwidth]{../figures/13b_roc_train_test_modelos.png}
+\caption{Curvas ROC de entrenamiento frente a prueba, por modelo, con el gap train-test correspondiente a la tabla~\ref{tab:comparacion_operativo}.}
+\label{fig:roc_traintest}
+\end{figure}
+
 \subsection{Calibración y deriva temporal}
 
-Con un umbral de decisión fijo de 0,5, la matriz de confusión de XGBoost sobre el conjunto de prueba (figura~\ref{fig:confusion}) hace tangible el compromiso real que implica ese umbral. De los 874 accidentes realmente graves en 2018, el modelo detecta 614 (sensibilidad o \emph{recall} del 70,3\,\%), pero a costa de 4.062 falsas alarmas sobre los 6.356 accidentes que en realidad no eran graves: de cada accidente marcado como grave, solo el 13,1\,\% (\emph{precisión}) lo es de verdad. Esto no es un fallo del modelo, sino la consecuencia directa de entrenar con ponderación de clases (\texttt{class\_weight='balanced'}, o su equivalente en XGBoost) para que no ignore la clase minoritaria --- un ajuste que desplaza el umbral efectivo de decisión y favorece deliberadamente la sensibilidad sobre la precisión, precisamente el compromiso que interesa en un contexto de triaje, donde el coste de no avisar de un accidente grave (falso negativo) es mayor que el de una alerta de más (falso positivo). Por esta razón las métricas principales de comparación entre modelos son el área bajo la curva ROC y bajo la curva precisión-recall, que no dependen de un umbral concreto; el umbral de 0,5 usado aquí es solo ilustrativo, y en un despliegue real debería ajustarse explícitamente según el coste relativo de cada tipo de error --- y conviene que quien opere la aplicación de triaje (Sección~6.3) conozca esta baja precisión: la mayoría de las alertas de gravedad alta serán, en la práctica, falsas alarmas.
+Con un umbral de decisión fijo de 0,5, la matriz de confusión de XGBoost sobre el conjunto de prueba (figura~\ref{fig:confusion}) hace tangible el compromiso real que implica ese umbral. De los 874 accidentes realmente graves en 2018, el modelo detecta 621 (sensibilidad o \emph{recall} del 71,1\,\%), pero a costa de 4.100 falsas alarmas sobre los 9.804 accidentes que en realidad no eran graves: de cada accidente marcado como grave, solo el 13,2\,\% (\emph{precisión}) lo es de verdad. Esto no es un fallo del modelo, sino la consecuencia directa de entrenar con ponderación de clases (\texttt{class\_weight='balanced'}, o su equivalente en XGBoost) para que no ignore la clase minoritaria --- un ajuste que desplaza el umbral efectivo de decisión y favorece deliberadamente la sensibilidad sobre la precisión, precisamente el compromiso que interesa en un contexto de triaje, donde el coste de no avisar de un accidente grave (falso negativo) es mayor que el de una alerta de más (falso positivo). Por esta razón las métricas principales de comparación entre modelos son el área bajo la curva ROC y bajo la curva precisión-recall, que no dependen de un umbral concreto; el umbral de 0,5 usado aquí es solo ilustrativo, y en un despliegue real debería ajustarse explícitamente según el coste relativo de cada tipo de error --- y conviene que quien opere la aplicación de triaje (Sección~6.3) conozca esta baja precisión: la mayoría de las alertas de gravedad alta serán, en la práctica, falsas alarmas.
 
 \begin{figure}[htbp]
 \centering
@@ -408,9 +487,26 @@ Como comprobación adicional de que 2018 es representativo, se validó con venta
 
 ¿Qué significa ``elegir el mejor modelo'' cuando el objetivo ya no es desplegarlo, sino interpretarlo? La interpretabilidad no es gratuita: los valores SHAP y los \emph{odds ratios} de la Sección~5 solo son fiables si vienen de un modelo que realmente aprendió las relaciones de los datos --- explicar un mal modelo produce patrones espurios, no hallazgos. Por eso se entrenan los mismos cuatro algoritmos, esta vez con su configuración por defecto y sin ninguna rejilla (tunear aquí rompería la comparación en igualdad de condiciones), y se elige el que mejor generaliza para servir de base a la interpretación. Tampoco basta con una regresión logística, pese a ser interpretable por diseño: un modelo lineal puede no captar relaciones no lineales, como el efecto de composición de la Sección~5.2. Por eso se elige el algoritmo ganador para la interpretación principal, manteniendo la regresión logística en paralelo como contraste (Sección~5.1): que dos modelos tan distintos coincidan en qué variables dominan respalda que el hallazgo es real, no un artefacto de un único algoritmo.
 
-El modelo explicativo, entrenado con la matriz de referencia (43 variables, incluido el perfil de personas), se evaluó con los mismos cuatro candidatos. De nuevo \emph{Gradient Boosting} gana (AUC-ROC 0,724), seguido de la regresión logística (0,712); \emph{Random Forest} y XGBoost, sin tunear para esta matriz, sobreajustan marcadamente (0,693 y 0,684, con gap de 0,31 y 0,19) --- coherente con la Sección~4.2 sobre limitar su complejidad.
+El modelo explicativo, entrenado con la matriz de referencia (42 variables, incluido el perfil de personas), se evaluó con los mismos cuatro candidatos. De nuevo \emph{Gradient Boosting} gana (AUC-ROC 0,722), seguido de la regresión logística (0,711); \emph{Random Forest} y XGBoost, sin tunear para esta matriz, sobreajustan marcadamente (0,691 y 0,688, con gap de 0,309 y 0,188) --- coherente con la Sección~4.2 sobre limitar su complejidad.
 
-Frente al mejor modelo operativo (XGBoost, 0,708), la mejora es real pero modesta: ~1,6 puntos de AUC-ROC. Las variables del momento del aviso ya capturan la mayor parte de la señal; el perfil de personas aporta valor incremental sin ser dominante --- su valor está más en la \textbf{interpretación para prevención} que en la mejora bruta de predicción.
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Modelo} & \textbf{AUC-ROC} & \textbf{Gap train-test} \\
+\midrule
+\textbf{Gradient Boosting} & \textbf{0,722} & 0,061 \\
+Regresión logística & 0,711 & 0,008 \\
+\emph{Random Forest} & 0,691 & 0,309 (sobreajuste marcado) \\
+XGBoost & 0,688 & 0,188 (sobreajuste marcado) \\
+\bottomrule
+\end{tabular}
+\caption{Comparación de los cuatro modelos explicativos, sin ajuste de hiperparámetros (matriz de referencia, 42 variables).}
+\label{tab:comparacion_explicativo}
+\end{table}
+
+Frente al mejor modelo operativo (XGBoost, 0,707), la mejora es real pero modesta: ~1,4 puntos de AUC-ROC. Las variables del momento del aviso ya capturan la mayor parte de la señal; el perfil de personas aporta valor incremental sin ser dominante --- su valor está más en la \textbf{interpretación para prevención} que en la mejora bruta de predicción.
 
 % =============================================================================
 \section{Interpretabilidad y hallazgos para la prevención}
@@ -429,25 +525,25 @@ La idea central de los valores SHAP (\emph{SHapley Additive exPlanations}) es re
 \toprule
 \textbf{Variable} & \textbf{Contribución SHAP media} & \textbf{Puntos de probabilidad (aprox.)} \\
 \midrule
-Presencia de motocicleta/ciclomotor & 0,617 & 15,3 \\
-Presencia de peatón & 0,305 & 7,5 \\
-Número de víctimas (log) & 0,173 & 4,2 \\
-Tipo de accidente = atropello & 0,145 & 3,5 \\
-Hora del día (componente coseno) & 0,136 & 3,3 \\
-\% histórico de motos en el distrito & 0,107 & 2,6 \\
-Presencia de bicicleta & 0,087 & 2,1 \\
-Número de personas implicadas & 0,085 & 2,0 \\
-Presencia de lluvia & 0,079 & 1,9 \\
-Tasa histórica de gravedad del distrito & 0,027 & 0,6 \\
+Presencia de motocicleta/ciclomotor & 0,617 & 15,2 \\
+Presencia de peatón & 0,304 & 7,4 \\
+Número de víctimas (log) & 0,169 & 4,1 \\
+Tipo de accidente = atropello & 0,147 & 3,5 \\
+Hora del día (componente coseno) & 0,138 & 3,3 \\
+\% histórico de motos en el distrito & 0,114 & 2,7 \\
+Presencia de lluvia & 0,099 & 2,4 \\
+Número de personas implicadas & 0,092 & 2,2 \\
+Presencia de bicicleta & 0,085 & 2,1 \\
+Hora del día (componente seno) & 0,083 & 2,0 \\
 \bottomrule
 \end{tabular}
 \caption{Diez variables con mayor contribución media absoluta al riesgo predicho (escala SHAP en log-odds y su equivalente aproximado en puntos de probabilidad).}
 \label{tab:shap}
 \end{table}
 
-La presencia de una motocicleta o ciclomotor es, con diferencia, la variable de mayor peso --- más del doble que la segunda--- seguida del peatón (tabla~\ref{tab:shap}): ambos son usuarios de la vía sin protección estructural frente a un impacto, a diferencia de ir en un turismo. La regresión logística confirma la jerarquía: la moto tiene la razón de probabilidades más alta del modelo (4,68, multiplica por 4,7 las probabilidades de gravedad), y el atropello la segunda (3,24).
+La presencia de una motocicleta o ciclomotor es, con diferencia, la variable de mayor peso --- más del doble que la segunda--- seguida del peatón (tabla~\ref{tab:shap}): ambos son usuarios de la vía sin protección estructural frente a un impacto, a diferencia de ir en un turismo. La regresión logística confirma la jerarquía: la moto tiene la razón de probabilidades más alta del modelo (4,72, multiplica por 4,7 las probabilidades de gravedad), y el atropello la segunda entre las variables de riesgo directamente accionables (3,22) --- el número de víctimas (log), discutido aparte a continuación por no ser accionable, y el vuelco (poco frecuente, con intervalo de confianza más amplio) tienen una razón de probabilidades intermedia entre ambas.
 
-Un matiz de SHAP: la contribución del atropello (0,145) es menor que la del peatón (0,305), aunque un atropello implica un peatón casi por definición --- sugiere que ``presencia de peatón'' capta algo más amplio, como un peatón golpeado en una colisión múltiple no clasificada como atropello.
+Un matiz de SHAP: la contribución del atropello (0,147) es menor que la del peatón (0,304), aunque un atropello implica un peatón casi por definición --- sugiere que ``presencia de peatón'' capta algo más amplio, como un peatón golpeado en una colisión múltiple no clasificada como atropello.
 
 El número de víctimas (log) aparece tercero, pero con cautela: al ser la gravedad el máximo entre implicados, más víctimas implica casi por construcción más probabilidad de que alguna sea grave. No es un hallazgo accionable, sino un reflejo del diseño de la variable objetivo --- por eso no se usa en el modelo operativo.
 
@@ -471,10 +567,11 @@ La Figura~\ref{fig:beeswarm} muestra, para las variables de la tabla~\ref{tab:sh
 \end{figure}
 
 \subsection{Focalización geográfica, temporal y demográfica}
+\label{sec:focalizacion}
 
 Para las tres dimensiones de focalización planteadas como objetivo se obtuvieron los siguientes resultados.
 
-\textbf{Geográfica.} La contribución media de cada distrito al riesgo predicho no sigue el mismo orden que su tasa histórica bruta (compárese con la figura~\ref{fig:tasa_distrito}): Salamanca, Chamartín y Moncloa-Aravaca empujan más la predicción hacia mayor gravedad pese a una tasa moderada (~9\,\%), mientras que Vicálvaro, Puente de Vallecas y San Blas, con tasa más alta (11--12\,\%), quedan con contribución negativa (tabla~\ref{tab:distritos}). El motivo: el modelo ya explica buena parte del riesgo bruto de estos últimos vía otras variables (tipo de accidente, tipo de vehículo), así que su contribución \emph{incremental} --- una vez descontado lo demás--- es menor. Para focalizar por el riesgo que el modelo no atribuye ya a otro factor, los distritos prioritarios son los primeros, no los de mayor tasa bruta --- aunque el tamaño de muestra por distrito (33--168 accidentes) es limitado, y esta priorización es orientativa.
+\textbf{Geográfica.} La contribución media de cada distrito al riesgo predicho no sigue el mismo orden que su tasa histórica bruta (compárese con la figura~\ref{fig:tasa_distrito}): Chamartín, Moncloa-Aravaca y Salamanca empujan más la predicción hacia mayor gravedad pese a una tasa moderada (~9\,\%), mientras que Vicálvaro, San Blas y Villa de Vallecas, con tasa más alta (10,7--11,7\,\%), quedan con contribución negativa (tabla~\ref{tab:distritos}). El motivo: el modelo ya explica buena parte del riesgo bruto de estos últimos vía otras variables (tipo de accidente, tipo de vehículo), así que su contribución \emph{incremental} --- una vez descontado lo demás--- es menor. Para focalizar por el riesgo que el modelo no atribuye ya a otro factor, los distritos prioritarios son los primeros, no los de mayor tasa bruta --- aunque el tamaño de muestra por distrito (33--168 accidentes) es limitado, y esta priorización es orientativa.
 
 \begin{table}[h]
 \centering
@@ -483,22 +580,36 @@ Para las tres dimensiones de focalización planteadas como objetivo se obtuviero
 \toprule
 \textbf{Distrito} & \textbf{Contribución SHAP media} & \textbf{Tasa histórica bruta} & \textbf{Accidentes en la muestra} \\
 \midrule
-Salamanca & $+0{,}031$ & 9,0\,\% & 168 \\
-Chamartín & $+0{,}026$ & 9,1\,\% & 148 \\
-Moncloa-Aravaca & $+0{,}015$ & 8,9\,\% & 109 \\
+Chamartín & $+0{,}043$ & 9,1\,\% & 148 \\
+Moncloa-Aravaca & $+0{,}041$ & 8,9\,\% & 109 \\
+Salamanca & $+0{,}037$ & 9,0\,\% & 168 \\
 \multicolumn{4}{c}{\dots} \\
-San Blas & $-0{,}030$ & 10,8\,\% & 105 \\
-Puente de Vallecas & $-0{,}039$ & 11,3\,\% & 95 \\
-Vicálvaro & $-0{,}090$ & 11,7\,\% & 40 \\
+Villa de Vallecas & $-0{,}032$ & 10,7\,\% & 53 \\
+San Blas & $-0{,}052$ & 10,8\,\% & 105 \\
+Vicálvaro & $-0{,}058$ & 11,7\,\% & 40 \\
 \bottomrule
 \end{tabular}
 \caption{Distritos con la contribución SHAP media más alta y más baja, frente a su tasa histórica bruta de gravedad.}
 \label{tab:distritos}
 \end{table}
 
-\textbf{Temporal.} La madrugada (0--7h, pico en torno a las 6) es la franja que más empuja hacia mayor gravedad; de 9h a media tarde el efecto es negativo, y vuelve a subir desde las 21h. Coincide con el patrón ya visto en el EDA de forma puramente descriptiva --- confirmado por dos vías independientes--- y sugiere concentrar controles y campañas (velocidad, alcohol, fatiga) en el tramo nocturno.
+\textbf{Temporal.} La madrugada (0--7h, pico en torno a las 6) es la franja que más empuja hacia mayor gravedad; de 9h a media tarde el efecto es negativo, y vuelve a subir desde las 21h (figura~\ref{fig:shap_hora}). Coincide con el patrón ya visto en el EDA de forma puramente descriptiva (figura~\ref{fig:heatmap_gravedad}) --- confirmado por dos vías independientes--- y sugiere concentrar controles y campañas (velocidad, alcohol, fatiga) en el tramo nocturno.
 
-\textbf{Demográfica.} La presencia de un menor o un mayor de 65 años muestra una contribución sistemáticamente positiva al riesgo (0,02--0,16 en log-odds) cuando está presente, y ligeramente negativa cuando no. Es un efecto más modesto que el de motos o peatones, pero consistente en dirección --- apoya campañas dirigidas a estos colectivos, independientes del tipo de vehículo.
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.75\textwidth]{../figures/18_shap_hora.png}
+\caption{Contribución SHAP media de la franja horaria a la predicción de gravedad, por hora del día.}
+\label{fig:shap_hora}
+\end{figure}
+
+\textbf{Demográfica.} La presencia de un menor o un mayor de 65 años muestra una contribución sistemáticamente positiva al riesgo (0,02--0,19 en log-odds) cuando está presente, y ligeramente negativa cuando no (figura~\ref{fig:shap_edad}). Es un efecto más modesto que el de motos o peatones, pero consistente en dirección --- apoya campañas dirigidas a estos colectivos, independientes del tipo de vehículo.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.6\textwidth]{../figures/19_shap_edad_riesgo.png}
+\caption{Contribución SHAP de \texttt{INCLUYE\_EDAD\_RIESGO} (presencia de un menor o un mayor de 65 años), según esté ausente (0) o presente (1).}
+\label{fig:shap_edad}
+\end{figure}
 
 En conjunto, moto, peatón y atropello no son ``prohibibles'' por una campaña, pero informan \textbf{dónde y cuándo} reforzar la protección de esos usuarios vulnerables: distrito, franja horaria y edad son la traducción operativa de estos hallazgos para campañas dirigidas, en vez de genéricas.
 
@@ -573,26 +684,26 @@ Además, todas las rutas y parámetros de partición (año de corte, tamaño de 
 
 El trabajo responde a sus dos preguntas con resultados concretos.
 
-\textbf{Triaje operativo (Pregunta 1).} XGBoost, entrenado solo con información del momento del aviso, alcanza un área bajo la curva ROC de 0,708 sobre un año no visto, estable en cinco años de validación. En términos honestos: 0,5 es azar puro y solo por encima de 0,8--0,9 se considera fuertemente discriminativo, así que 0,708 queda en el extremo inferior de lo ``aceptable'' --- mejor que no usar ningún modelo, pero lejos de un predictor determinante. Es coherente con el problema: falta toda la dinámica real del impacto (velocidad, mecanismo, factores humanos) que probablemente concentra la señal que el modelo no puede ver. El modelo explicativo, con más variables, solo mejora hasta 0,724 (Sección~4.5) --- confirma que el techo de rendimiento es del propio dataset, no una limitación específica del modelo operativo. Por eso el encuadre correcto, el que adopta la aplicación de demostración, es el de una señal de apoyo, nunca un sustituto del juicio profesional.
+\textbf{Triaje operativo (Pregunta 1).} XGBoost, entrenado solo con información del momento del aviso, alcanza un área bajo la curva ROC de 0,707 sobre un año no visto, estable en cinco años de validación. En términos honestos: 0,5 es azar puro y solo por encima de 0,8--0,9 se considera fuertemente discriminativo, así que 0,707 queda en el extremo inferior de lo ``aceptable'' --- mejor que no usar ningún modelo, pero lejos de un predictor determinante. Es coherente con el problema: falta toda la dinámica real del impacto (velocidad, mecanismo, factores humanos) que probablemente concentra la señal que el modelo no puede ver. El modelo explicativo, con más variables, solo mejora hasta 0,722 (Sección~4.5) --- confirma que el techo de rendimiento es del propio dataset, no una limitación específica del modelo operativo. Por eso el encuadre correcto, el que adopta la aplicación de demostración, es el de una señal de apoyo, nunca un sustituto del juicio profesional.
 
 \textbf{Prevención vial (Pregunta 2).} El análisis de interpretabilidad --- contrastado con dos modelos distintos--- identifica motocicletas y peatones como los factores de mayor peso individual, y traduce el resto en recomendaciones de focalización:
 
 \begin{itemize}[nosep]
-\item \textbf{Dónde:} Salamanca, Chamartín y Moncloa-Aravaca, por su contribución incremental al riesgo más allá de lo ya explicado por otras variables.
+\item \textbf{Dónde:} Chamartín, Moncloa-Aravaca y Salamanca, por su contribución incremental al riesgo más allá de lo ya explicado por otras variables.
 \item \textbf{Cuándo:} la franja de madrugada, por su contribución sistemáticamente más alta.
 \item \textbf{Quién:} menores y mayores de 65 años, como línea de prevención independiente del tipo de vehículo.
 \end{itemize}
 
-La diferencia de rendimiento entre ambos modelos (~1,6 puntos de AUC-ROC) confirma que restringirse a la información del aviso tiene un coste real pero moderado, y que el perfil de las personas vale más para interpretar que para predecir. Ambos resultados se obtienen con un pipeline llevado más allá del notebook: una aplicación funcional de demostración y salvaguardas de reproducibilidad frente a futuras publicaciones de datos del mismo formato.
+La diferencia de rendimiento entre ambos modelos (~1,4 puntos de AUC-ROC) confirma que restringirse a la información del aviso tiene un coste real pero moderado, y que el perfil de las personas vale más para interpretar que para predecir.
 
 \subsection{Limitaciones}
 
-La más relevante de cara a un uso operativo real es la baja precisión al umbral de 0,5: solo el 13,1\,\% de las alertas de gravedad alta son realmente graves (matriz de confusión, Sección~4.4). No es un defecto aislado, sino tres factores estructurales que conviene distinguir, porque cada uno exige una respuesta distinta:
+La más relevante de cara a un uso operativo real es la baja precisión al umbral de 0,5: solo el 13,2\,\% de las alertas de gravedad alta son realmente graves (matriz de confusión, Sección~4.4). No es un defecto aislado, sino tres factores estructurales que conviene distinguir, porque cada uno exige una respuesta distinta:
 
 \begin{itemize}[nosep]
-\item \textbf{Desequilibrio de clases} (solo 9,6\,\% graves): una tasa moderada de falsos positivos entre los muchos accidentes leves (41,4\,\%) supera en número absoluto a los aciertos --- visible en el modesto AUC-PR (0,174) frente al AUC-ROC (0,708) de la tabla~\ref{tab:comparacion_operativo}. La brecha no es casual: el ROC mide falsos positivos \emph{sobre el total de negativos} (enorme, así que apenas se mueve); precisión-recall mide precisión \emph{sobre el total de positivos predichos} --- la pregunta que le importa a quien recibe la alerta.
+\item \textbf{Desequilibrio de clases} (solo 9,6\,\% graves): una tasa moderada de falsos positivos entre los muchos accidentes leves (41,4\,\%) supera en número absoluto a los aciertos --- visible en el modesto AUC-PR (0,174) frente al AUC-ROC (0,707) de la tabla~\ref{tab:comparacion_operativo}. La brecha no es casual: el ROC mide falsos positivos \emph{sobre el total de negativos}; precisión-recall mide precisión \emph{sobre el total de positivos predichos} --- la pregunta que le importa a quien recibe la alerta.
 \item \textbf{Ponderación de clases} en el entrenamiento --- necesaria para que el modelo no colapse prediciendo siempre ``no grave''--- desplaza el umbral efectivo y prioriza sensibilidad sobre precisión: razonable para un triaje (un falso negativo cuesta más que una alerta de más), pero hay que comunicarlo con claridad a quien use la herramienta.
-\item \textbf{Techo de discriminación del modelo} (AUC-ROC 0,708): las distribuciones de graves y no graves se solapan bastante, así que cualquier umbral que capture la mayoría de los graves reales capturará también muchos que no lo son.
+\item \textbf{Techo de discriminación del modelo} (AUC-ROC 0,707): las distribuciones de graves y no graves se solapan bastante, así que cualquier umbral que capture la mayoría de los graves reales capturará también muchos que no lo son.
 \end{itemize}
 
 En un despliegue real, el umbral debería recalibrarse según el coste relativo de cada tipo de error, no mantenerse en 0,5.
@@ -604,7 +715,7 @@ Otras limitaciones reconocidas:
 \item La validación de ventana expansiva no reajusta en cada iteración las variables aprendidas del histórico, por simplicidad, lo que podría favorecer ligeramente a los primeros años.
 \item La deriva temporal en la tasa de gravedad implica que un despliegue real necesitaría recalibración periódica.
 \item El tamaño de muestra por distrito en test es limitado, así que la priorización geográfica es orientativa.
-\item El periodo de datos (2012--2018) no incluye el patinete eléctrico, hoy ya relevante para la seguridad vial de la ciudad; una actualización futura debería incorporarlo como categoría propia de vehículo.
+\item El periodo de datos (2012--2018) no incluye el patinete eléctrico, hoy ya relevante para la seguridad vial de la ciudad; una actualización futura debería incorporarlo como categoría de vehículo.
 \end{itemize}
 
 \subsection{Trabajo futuro}
@@ -638,7 +749,7 @@ Como continuación natural de este trabajo se plantean:
 \appendix
 \section{Código representativo del proyecto}
 
-Este anexo no cuenta para el límite de 20 páginas del cuerpo principal. Recoge, con su docstring, los fragmentos de código reales del proyecto que sostienen cada afirmación cuantitativa o decisión metodológica del cuerpo del documento --- ni la lógica ni los nombres de variables o funciones se han alterado--- para que puedan consultarse junto a la explicación a la que acompañan sin necesidad de abrir el repositorio. El código completo, con el resto de funciones, los seis notebooks y la aplicación web, está disponible en \url{https://github.com/meritxellabellan29/TFM-accidentes-trafico} (Sección~6.1; repositorio público, sin necesidad de permisos para consultarlo). Algunos fragmentos omiten, marcándolo explícitamente con un comentario, partes repetitivas del docstring original (por ejemplo, la documentación exhaustiva de cada parámetro) que no aportan a la comprensión del razonamiento; por legibilidad tipográfica dentro del bloque de código, además, se han retirado las tildes de los comentarios y docstrings --- el código real en el repositorio conserva la ortografía completa.
+Este anexo recoge los fragmentos de código reales del proyecto que sostienen cada afirmación cuantitativa o decisión metodológica del cuerpo del documento. El código completo, con el resto de funciones, los seis notebooks y la aplicación web, está disponible en \url{https://github.com/meritxellabellan29/TFM-accidentes-trafico} (Sección~6.1; repositorio público, sin necesidad de permisos para consultarlo). Algunos fragmentos omiten, marcándolo explícitamente con un comentario, partes repetitivas del docstring original (por ejemplo, la documentación exhaustiva de cada parámetro) que no aportan a la comprensión del razonamiento; por legibilidad tipográfica dentro del bloque de código.
 
 \subsection{Asociación estadística con corrección por comparaciones múltiples (\texttt{01\_EDA.ipynb})}
 \label{app:cramer}
